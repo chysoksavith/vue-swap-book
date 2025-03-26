@@ -1,9 +1,7 @@
-import dotenv from "dotenv";
 import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import pool from "../config/db";
 import jwt from "jsonwebtoken";
-dotenv.config();
 
 export const register = async (req: Request, res: Response) => {
   try {

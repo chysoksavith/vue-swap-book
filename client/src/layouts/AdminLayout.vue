@@ -4,12 +4,17 @@ import SidebarVue from "../components/admin/Sidebar.vue";
 </script>
 <template>
   <div class="admin-layout">
-    <SidebarVue />
-    <div class="main-content">
+    <div id="sidebar" class="active">
+      <SidebarVue />
+    </div>
+    <div id="main">
       <HeaderVue />
-      <main>
+      <div class="page-heading">
+        <h3>Profile Statistics</h3>
+      </div>
+      <div class="page-content">
         <router-view></router-view>
-      </main>
+      </div>
     </div>
   </div>
 </template>
