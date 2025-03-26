@@ -41,6 +41,7 @@ export const getCategoryById = async (req: Request, res: Response) => {
       });
     }
     res.status(200).json({
+      success: true,
       categories: categories,
     });
   } catch (error) {
