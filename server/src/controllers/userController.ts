@@ -1,11 +1,22 @@
 import { Request, Response } from "express";
+import { uploadToCloudinary } from "../utils/cloudinaryUpload";
 import bcrypt from "bcryptjs";
 import pool from "../config/db";
 import jwt from "jsonwebtoken";
 
 export const register = async (req: Request, res: Response) => {
   try {
-    const { name, email, password, phone, address, profile_image } = req.body;
+    const { name, email, password, phone, address, role } = req.body;
+    let imageUrl = null;
+    // handle file request
+    if (req.file) {
+      const base64image = req.file.buffer.toString("base64");
+      const dataURI = `data:${req.file.mimetype};base64,${base64image}`; // Fixed semicolon spacing
+      imageUrl = await uploadToCloudinary(dataURI);
+    } else {
+      imageUrl = null;
+    }
+    // handle hash password
     const hashedPassword = await bcrypt.hash(password, 10);
     const sql = "SELECT id FROM users WHERE email = ?";
     const [existingUser] = await pool.query(sql, [email]);
@@ -16,15 +27,23 @@ export const register = async (req: Request, res: Response) => {
     }
     // creating user
     const sql2 =
-      "INSERT INTO users (name, email, password, phone, address) VALUES (?, ?, ?, ?, ?)";
-    await pool.query(sql2, [name, email, hashedPassword, phone, address]);
+      "INSERT INTO users (name, email, password, phone, address, profile_image, role) VALUES (?, ?, ?, ?, ?, ?, ?)";
+    await pool.query(sql2, [
+      name,
+      email,
+      hashedPassword,
+      phone,
+      address,
+      imageUrl,
+      role || "user",
+    ]);
     res.status(201).json({
       message: "User created successfully",
     });
   } catch (error) {
     console.error("Registration error:", error);
     res.status(400).json({
-      message: "Email already exists",
+      message: "Registration failed",
     });
   }
 };
