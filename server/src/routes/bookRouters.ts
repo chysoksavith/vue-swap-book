@@ -8,9 +8,15 @@ import {
 } from "../controllers/bookController";
 import { bookValidationRules } from "../middlewares/bookValidation";
 import { validateResult } from "../middlewares/validateResult";
+import { authenticateUser, checkRole } from "../middlewares/authMiddleware";
 const router = express.Router();
 
-router.get("/", getBooks as RequestHandler);
+router.get(
+  "/",
+  authenticateUser as RequestHandler,
+  checkRole(["admin"]) as RequestHandler,
+  getBooks as RequestHandler
+);
 router.get("/:id", getBookById as RequestHandler);
 router.post(
   "/",
