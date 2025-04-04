@@ -83,6 +83,7 @@ export const login = async (req: Request, res: Response) => {
         expiresIn: "10h",
       }
     );
+
     // send response with token
     res.status(200).json({
       token: token,
@@ -90,6 +91,7 @@ export const login = async (req: Request, res: Response) => {
         id: user.id,
         email: user.email,
         name: user.name,
+        role: user.role,
       },
     });
   } catch (error) {

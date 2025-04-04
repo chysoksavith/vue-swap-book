@@ -4,8 +4,16 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
+interface JwtPayload {
+  id: number;
+  email: string;
+  role: string;
+  iat: number;
+  exp: number;
+}
+
 interface AuthRequest extends Request {
-  user?: any;
+  user?: JwtPayload;
 }
 
 export const authenticateUser = (
@@ -13,17 +21,38 @@ export const authenticateUser = (
   res: Response,
   next: NextFunction
 ) => {
-  const token = req.header("Authorization")?.split(" ")[1];
-  if (!token) {
-    return res
-      .status(401)
-      .json({ message: "Access denied, no token provided" });
-  }
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!);
+    const authHeader = req.header("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return res.status(401).json({
+        status: "error",
+        message: "Invalid authorization header format",
+      });
+    }
+    const token = authHeader.split(" ")[1];
+
+    if (!token) {
+      return res
+        .status(401)
+        .json({ status: "error", message: "Access denied, no token provided" });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
+    // check token expiration
+    if (decoded.exp && decoded.exp < Date.now() / 1000) {
+      return res
+        .status(401)
+        .json({ status: "error", message: "Token has expired" });
+    }
     req.user = decoded;
     next();
   } catch (error) {
+    if (error instanceof jwt.JsonWebTokenError) {
+      return res.status(401).json({
+        status: "error",
+        message: "Invalid token",
+      });
+    }
     res.status(400).json({ message: "Invalid token" });
   }
 };
@@ -31,14 +60,18 @@ export const authenticateUser = (
 // role permissions
 export const checkRole = (allowedRole: string[]) => {
   return (req: AuthRequest, res: Response, next: NextFunction) => {
-    if (!req.user) {
-      return res.status(401).json({ message: "Authentication required" });
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      if (!allowedRole.includes(req.user.role)) {
+        return res.status(403).json({
+          message: "Access denied. Insufficient permissions",
+        });
+      }
+      next();
+    } catch (error) {
+      res.status(500).json({ message: "Internal server error" });
     }
-    if (!allowedRole.includes(req.user.role)) {
-      return res.status(403).json({
-        message: "Access denied. Insufficient permissions",
-      });
-    }
-    next();
   };
 };

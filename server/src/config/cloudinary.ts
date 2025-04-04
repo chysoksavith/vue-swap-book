@@ -4,14 +4,6 @@ import dotenv from "dotenv";
 // Explicitly specify the .env file path
 dotenv.config({ path: ".env" });
 
-// Log for debugging
-console.log("Cloudinary Cloud Name:", process.env.CLOUDINARY_CLOUD_NAME);
-console.log("Cloudinary API Key:", process.env.CLOUDINARY_API_KEY);
-console.log(
-  "Cloudinary API Secret:",
-  process.env.CLOUDINARY_API_SECRET ? "Loaded" : "Missing"
-);
-
 // Check if environment variables are available
 if (
   !process.env.CLOUDINARY_CLOUD_NAME ||

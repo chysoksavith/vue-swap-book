@@ -1,4 +1,2 @@
-<script setup lang="ts"></script>
-<template>
-
-</template>
+    <template></template>
+    <script setup lang="ts"></script>
