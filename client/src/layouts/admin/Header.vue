@@ -90,7 +90,11 @@
             </a>
           </li>
           <li><a>Settings</a></li>
-          <li><a>Logout</a></li>
+          <li>
+            <a @click="handleLogout" :disabled="isLoading">{{
+              isLoading ? "Logging out..." : "Logout"
+            }}</a>
+          </li>
         </ul>
       </div>
     </div>
@@ -98,10 +102,25 @@
 </template>
 
 <script setup>
-import { computed } from "vue";
-import { useRoute } from "vue-router";
+import { computed, ref } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { useAuthStore } from "../../stores/auth.store";
 
+const authStore = useAuthStore();
 const route = useRoute();
+const router = useRouter();
+const isLoading = ref(false);
+const handleLogout = async () => {
+  isLoading.value = true;
+  try {
+    await authStore.logout();
+    router.push("/login");
+  } catch (error) {
+    console.error("Logout error:", error.message);
+  } finally {
+    isLoading.value = false;
+  }
+};
 
 const currentRouteName = computed(() => {
   return route.name || "Dashboard";

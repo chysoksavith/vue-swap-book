@@ -3,6 +3,7 @@ import { uploadToCloudinary } from "../utils/cloudinaryUpload";
 import bcrypt from "bcryptjs";
 import pool from "../config/db";
 import jwt from "jsonwebtoken";
+import { extractToken } from "../utils/token";
 
 export const register = async (req: Request, res: Response) => {
   try {
@@ -99,5 +100,64 @@ export const login = async (req: Request, res: Response) => {
       message: "Login failed",
     });
   }
-  // export const logout = async ()
 };
+export const logout = async (req: Request, res: Response) => {
+  try {
+    // No need to extract or verify token here
+    // Assume frontend will clear the token from storage (localStorage, cookies, etc.)
+
+    return res.status(200).json({
+      success: true,
+      message: "Logged out successfully",
+    });
+  } catch (error) {
+    console.error("❌ Logout error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Logout failed. Please try again later.",
+    });
+  }
+};
+// export const logout = async (req: Request, res: Response) => {
+//   try {
+//     const token = extractToken(req.headers.authorization);
+
+//     if (!token || token.length < 10) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Invalid or missing token",
+//       });
+//     }
+
+//     // Check if token is already blacklisted
+//     const [existing] = await pool.query(
+//       "SELECT id FROM token_blacklist WHERE token = ? AND expired_at > NOW()",
+//       [token]
+//     );
+
+//     if ((existing as any).length > 0) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Token already invalidated",
+//       });
+//     }
+
+//     // Insert into blacklist
+//     const insertQuery = `
+//       INSERT INTO token_blacklist (token, expired_at)
+//       VALUES (?, DATE_ADD(NOW(), INTERVAL 10 HOUR))
+//     `;
+//     await pool.query(insertQuery, [token]);
+
+//     return res.status(200).json({
+//       success: true,
+//       message: "Logged out successfully",
+//     });
+//   } catch (error) {
+//     console.error("❌ Logout error:", error);
+//     return res.status(500).json({
+//       success: false,
+//       message: "Logout failed. Please try again later.",
+//     });
+//   }
+// };

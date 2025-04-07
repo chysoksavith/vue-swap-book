@@ -41,8 +41,16 @@ export const useAuthStore = defineStore("auth", {
     },
     //  logout
     async logout() {
-      await authService.logout();
-      this.clearAuth();
+      try {
+        if (!this.token) {
+          throw new Error("No active session");
+        }
+        await authService.logout();
+        this.clearAuth();
+      } catch (error: any) {
+        this.clearAuth();
+        throw new Error(error.response?.data?.message || "Logout failed");
+      }
     },
     setAuth(response: { token: string; user: User }) {
       this.token = response.token;

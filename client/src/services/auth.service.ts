@@ -44,11 +44,17 @@ export const authService = {
    * Logs out user and cleans up local storage
    */
   async logout(): Promise<void> {
+    const token = localStorage.getItem('token');
+    if(!token) {
+      throw new Error("No active session")
+    }
     try {
       await api.post("/users/logout");
-    } finally {
       localStorage.removeItem("token");
       localStorage.removeItem("user");
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Logout failed');
     }
+  
   },
 };
