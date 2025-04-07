@@ -1,0 +1,8 @@
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@100..900&display=swap");
+
+/* Apply the font globally to the entire app */
+*,
+*::before,
+*::after {
+  font-family: "Montserrat", sans-serif;
+}

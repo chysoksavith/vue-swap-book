@@ -99,4 +99,5 @@ export const login = async (req: Request, res: Response) => {
       message: "Login failed",
     });
   }
+  // export const logout = async ()
 };

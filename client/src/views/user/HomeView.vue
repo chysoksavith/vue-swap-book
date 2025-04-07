@@ -18,7 +18,7 @@ const navigateToLogin = () => {
       >
         Login
       </button>
-    </div>
+    </div>  
 
     <!-- User list content will go here -->
     <div class="bg-white rounded-lg shadow p-6">
