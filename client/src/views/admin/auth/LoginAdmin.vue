@@ -36,7 +36,7 @@ const togglePassword = () => {
   showPassword.value = !showPassword.value;
 };
 
-const handleLogin = async () => {
+const handleLoginAdmin = async () => {
   error.value = "";
   const isFormValid = await v$.value.$validate();
   if (!isFormValid) return;
@@ -58,7 +58,7 @@ const handleLogin = async () => {
     });
 
     // Redirect to saved URL or dashboard
-    const returnUrl = authStore.returnUrl || '/admin/dashboard';
+    const returnUrl = authStore.returnUrl || "/admin/dashboard";
     router.push(returnUrl);
   } catch (err: any) {
     error.value = err.message || "Login failed. Please try again.";
@@ -76,7 +76,7 @@ const handleLogin = async () => {
   <div class="login-container">
     <div class="login-card">
       <h2>Login</h2>
-      <form @submit.prevent="handleLogin">
+      <form @submit.prevent="handleLoginAdmin">
         <!-- error alert -->
         <div v-if="error" class="error-alert">
           <font-awesome-icon :icon="['fas', 'circle-exclamation']" />
@@ -119,7 +119,7 @@ const handleLogin = async () => {
 
         <button type="submit" :disabled="isLoading" class="login-button">
           <span v-if="!isLoading">Login</span>
-          <font-awesome-icon v-else icon="spinner" spin />
+          <span v-else>loading..............</span>
         </button>
       </form>
     </div>

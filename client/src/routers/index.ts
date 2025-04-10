@@ -9,13 +9,25 @@ declare module "vue-router" {
     title?: string;
   }
 }
+const ROUTES = {
+  LOGIN: "/login",
+  ADMIN_LOGIN: "/admin/login",
+  // ... other routes
+};
 
 const routes: RouteRecordRaw[] = [
   // user
   {
     path: "/",
-    component: () => import("../views/user/HomeView.vue"),
-    meta: { layout: "user", title: "Swap Book | Home" },
+    component: () => import("../layouts/UserLayout.vue"),
+    meta: { layout: "user", title: "Swap Book" },
+    children: [
+      {
+        path: "/",
+        component: () => import("../views/user/HomeView.vue"),
+        meta: { layout: "home-page", title: "Swap Book | Home" },
+      },
+    ],
   },
   {
     path: "/login",
@@ -61,29 +73,58 @@ const router = createRouter({
   routes,
 });
 
-router.beforeEach(async (to, _from, next) => {
+// router.beforeEach(async (to, _from, next) => {
+//   const authStore = useAuthStore();
+//   document.title = to.meta.title || "Swap Book";
+
+//   // Handle guest-only routes (like login pages)
+//   if (to.meta.requiresGuest && authStore.isAuthenticated) {
+//     return next(authStore.isAdmin ? "/admin/dashboard" : "/");
+//   }
+
+//   // Handle protected routes
+//   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+//     authStore.setReturnUrl(to.fullPath);
+//     return next("/admin/login");
+//   }
+
+//   // Handle admin-only routes
+//   if (to.meta.requiresAdmin) {
+//     if (!authStore.isAuthenticated) {
+//       authStore.setReturnUrl(to.fullPath);
+//       return next("/admin/login");
+//     }
+//     if (!authStore.isAdmin) {
+//       return next("/");
+//     }
+//   }
+
+//   next();
+// });
+router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore();
   document.title = to.meta.title || "Swap Book";
 
-  // Handle guest-only routes (like login pages)
+  // Skip redirection for public routes
+  if (to.meta.isPublic) {
+    return next();
+  }
+
+  // Handle guest-only routes (login pages)
   if (to.meta.requiresGuest && authStore.isAuthenticated) {
     return next(authStore.isAdmin ? "/admin/dashboard" : "/");
   }
 
   // Handle protected routes
-  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-    authStore.setReturnUrl(to.fullPath);
-    return next("/admin/login");
-  }
-
-  // Handle admin-only routes
-  if (to.meta.requiresAdmin) {
+  if (to.meta.requiresAuth) {
     if (!authStore.isAuthenticated) {
       authStore.setReturnUrl(to.fullPath);
-      return next("/admin/login");
+      return next(authStore.isAdmin ? "/admin/login" : "/login");
     }
-    if (!authStore.isAdmin) {
-      return next("/");
+
+    // Handle admin-only routes
+    if (to.meta.requiresAdmin && !authStore.isAdmin) {
+      return next("/"); // Redirect non-admin users to home
     }
   }
 

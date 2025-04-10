@@ -10,11 +10,12 @@ import {
   faBox,
   faUsers,
   faEllipsisV,
+  faSpinner
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 // Add icons to the library before creating the app
-library.add(faHome, faBox, faUsers, faEllipsisV);
+library.add(faHome, faBox, faUsers, faEllipsisV, faSpinner);
 
 const app = createApp(App);
 

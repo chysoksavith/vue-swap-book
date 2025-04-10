@@ -1,4 +1,5 @@
 import api from "../config/axios";
+import type { User } from "../types/profile.type";
 
 interface LoginCredentials {
   email: string;
@@ -9,28 +10,17 @@ interface LoginResponse {
   user: {
     id: number;
     email: string;
-    name: string; 
+    name: string;
     role: string;
   };
 }
 export const authService = {
-  /**
-   * Authenticates admin user with email and password
-   * @param credentials - Admin login credentials
-   * @returns Promise containing token and user data
-   * @throws Error if authentication fails
-   */
-
   async login(credentials: LoginCredentials): Promise<LoginResponse> {
     const { data } = await api.post<LoginResponse>("/users/login", credentials);
     console.log("login", data);
     return data;
   },
 
-  /**
-   * Validates current auth token
-   * @returns Promise<boolean> true if token is valid
-   */
   async validateToken(): Promise<boolean> {
     try {
       await api.get("/users/validate-token");
@@ -39,22 +29,35 @@ export const authService = {
       return false;
     }
   },
+  // get profile
+  async getProfile(): Promise<{ user: User }> {
+    try {
+      const { data } = await api.get<User>("/users/profile");
+      return { user: data };
+    } catch (error: any) {
+      console.error("Profile fetch error:", error);
+      throw new Error(
+        error.response?.data?.message || "Failed to fetch profile"
+      );
+    }
+  },
 
-  /**
-   * Logs out user and cleans up local storage
-   */
-  async logout(): Promise<void> {
-    const token = localStorage.getItem('token');
-    if(!token) {
-      throw new Error("No active session")
+  async logout(role?: string): Promise<string> {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      throw new Error("No active session");
     }
     try {
       await api.post("/users/logout");
       localStorage.removeItem("token");
       localStorage.removeItem("user");
+
+      // Clear return URL to prevent redirect loops
+      localStorage.removeItem("returnUrl");
+
+      return role === "admin" ? "/admin/login" : "/login";
     } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Logout failed');
+      throw new Error(error.response?.data?.message || "Logout failed");
     }
-  
   },
 };

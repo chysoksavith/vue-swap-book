@@ -4,7 +4,16 @@ import bcrypt from "bcryptjs";
 import pool from "../config/db";
 import jwt from "jsonwebtoken";
 import { extractToken } from "../utils/token";
-
+import { RowDataPacket } from "mysql2";
+declare module "express" {
+  interface Request {
+    user?: {
+      id: number;
+      email: string;
+      role: string;
+    };
+  }
+}
 export const register = async (req: Request, res: Response) => {
   try {
     const { name, email, password, phone, address, role } = req.body;
@@ -77,7 +86,12 @@ export const login = async (req: Request, res: Response) => {
       }
     }
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role },
+      {
+        id: user.id,
+        email: user.email,
+        profile_image: user.profile_image,
+        role: user.role,
+      },
 
       jwtSecret,
       {
@@ -93,6 +107,7 @@ export const login = async (req: Request, res: Response) => {
         email: user.email,
         name: user.name,
         role: user.role,
+        profile_image: user.profile_image,
       },
     });
   } catch (error) {
@@ -103,9 +118,6 @@ export const login = async (req: Request, res: Response) => {
 };
 export const logout = async (req: Request, res: Response) => {
   try {
-    // No need to extract or verify token here
-    // Assume frontend will clear the token from storage (localStorage, cookies, etc.)
-
     return res.status(200).json({
       success: true,
       message: "Logged out successfully",
@@ -118,46 +130,45 @@ export const logout = async (req: Request, res: Response) => {
     });
   }
 };
-// export const logout = async (req: Request, res: Response) => {
-//   try {
-//     const token = extractToken(req.headers.authorization);
 
-//     if (!token || token.length < 10) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Invalid or missing token",
-//       });
-//     }
+export const getProfile = async (req: Request, res: Response) => {
+  try {
+    // 1. Get user ID from the authenticated request
+    const userId = req.user?.id;
 
-//     // Check if token is already blacklisted
-//     const [existing] = await pool.query(
-//       "SELECT id FROM token_blacklist WHERE token = ? AND expired_at > NOW()",
-//       [token]
-//     );
+    if (!userId) {
+      return res.status(401).json({
+        // 401 for Unauthorized
+        success: false,
+        message: "Authentication required",
+      });
+    }
 
-//     if ((existing as any).length > 0) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Token already invalidated",
-//       });
-//     }
+    // 2. Fetch user data (excluding sensitive fields like password)
+    const [users] = await pool.query<RowDataPacket[]>(
+      "SELECT id, name, email, phone, address, profile_image, role, created_at FROM users WHERE id = ?",
+      [userId]
+    );
 
-//     // Insert into blacklist
-//     const insertQuery = `
-//       INSERT INTO token_blacklist (token, expired_at)
-//       VALUES (?, DATE_ADD(NOW(), INTERVAL 10 HOUR))
-//     `;
-//     await pool.query(insertQuery, [token]);
+    // 3. Check if user exists
+    if (users.length === 0) {
+      return res.status(404).json({
+        // 404 for Not Found
+        success: false,
+        message: "User not found",
+      });
+    }
 
-//     return res.status(200).json({
-//       success: true,
-//       message: "Logged out successfully",
-//     });
-//   } catch (error) {
-//     console.error("❌ Logout error:", error);
-//     return res.status(500).json({
-//       success: false,
-//       message: "Logout failed. Please try again later.",
-//     });
-//   }
-// };
+    // 4. Return user data
+    return res.status(200).json({
+      success: true,
+      data: users[0], // Return the first (and only) user
+    });
+  } catch (error) {
+    console.error("Profile fetch error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch profile",
+    });
+  }
+};

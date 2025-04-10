@@ -1,6 +1,10 @@
 <template>
   <li>
-    <router-link :to="to" :class="{ active: active }">
+    <router-link
+      :to="to"
+      active-class="active"
+      exact-active-class="exact-active"
+    >
       <svg
         v-if="icon === 'home'"
         xmlns="http://www.w3.org/2000/svg"
@@ -133,7 +137,11 @@
 </template>
 
 <script setup>
-defineProps({
+import { computed } from "vue";
+import { useRoute } from "vue-router";
+const route = useRoute();
+
+const props = defineProps({
   to: {
     type: String,
     default: "/",
@@ -146,9 +154,20 @@ defineProps({
     type: String,
     default: "Link",
   },
-  active: {
-    type: Boolean,
-    default: false,
-  },
+});
+
+const isActive = computed(() => {
+  return route.path === props.to || route.path.startsWith(props.to + "/");
 });
 </script>
+<style scoped>
+.active {
+  background-color: #000000;
+  color: white;
+}
+
+.exact-active {
+  background-color: #000000;
+  color: white;
+}
+</style>

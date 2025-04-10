@@ -36,7 +36,7 @@ const togglePassword = () => {
   showPassword.value = !showPassword.value;
 };
 
-const handleLogin = async () => {
+const handleLoginUser = async () => {
   error.value = "";
   const isFormValid = await v$.value.$validate();
   if (!isFormValid) return;
@@ -53,13 +53,12 @@ const handleLogin = async () => {
       showConfirmButton: false,
     });
 
-    // check user role and redirect accordingly
-    if (response.user.role === "admin") {
-      router.push("/admin/dashboard");
-    } else {
-      const returnUrl = authStore.returnUrl || "/";
-      router.push(returnUrl);
-    }
+    // Role-based redirection
+    const redirectPath = authStore.isAdmin
+      ? authStore.returnUrl || "/admin/dashboard"
+      : authStore.returnUrl || "/";
+
+    router.push(redirectPath);
   } catch (err: any) {
     error.value = err.message || "Login failed. Please try again.";
     await Swal.fire({
@@ -76,7 +75,7 @@ const handleLogin = async () => {
   <div class="login-container">
     <div class="login-card">
       <h2>Login User</h2>
-      <form @submit.prevent="handleLogin">
+      <form @submit.prevent="handleLoginUser">
         <!-- error alert -->
         <div v-if="error" class="error-alert">
           <font-awesome-icon :icon="['fas', 'circle-exclamation']" />

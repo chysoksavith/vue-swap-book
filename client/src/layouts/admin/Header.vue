@@ -105,18 +105,45 @@
 import { computed, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "../../stores/auth.store";
+import Swal from "sweetalert2";
 
 const authStore = useAuthStore();
 const route = useRoute();
 const router = useRouter();
 const isLoading = ref(false);
+
 const handleLogout = async () => {
   isLoading.value = true;
   try {
-    await authStore.logout();
-    router.push("/login");
+    const result = await Swal.fire({
+      title: "Confirm Logout",
+      text: "Are you sure you want to logout?",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, logout",
+      cancelButtonText: "Cancel",
+      reverseButtons: true,
+    });
+
+    if (result.isConfirmed) {
+      const redirectPath = await authStore.logout();
+      await Swal.fire({
+        icon: "success",
+        title: "Logged Out",
+        text: "You have been successfully logged out",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+      router.push(redirectPath);
+    }
   } catch (error) {
-    console.error("Logout error:", error.message);
+    await Swal.fire({
+      title: "Logout Failed",
+      text: error.message || "An error occurred during logout",
+      icon: "error",
+    });
   } finally {
     isLoading.value = false;
   }
@@ -128,33 +155,12 @@ const currentRouteName = computed(() => {
 </script>
 
 <style scoped>
-header {
+.navbar {
   position: sticky;
   top: 0;
   left: 0;
   width: 100%;
   z-index: 50;
-}
-
-/* Mobile responsiveness */
-.navbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.5rem 1rem;
-}
-
-.input {
-  width: 100%;
-}
-
-.btn-ghost {
-  padding: 0;
-}
-
-.dropdown-content {
-  width: auto;
-  min-width: 200px;
 }
 
 .indicator {

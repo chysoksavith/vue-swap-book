@@ -1,69 +1,175 @@
 import { defineStore } from "pinia";
 import { authService } from "../services/auth.service";
+import type { User } from "../types/auth.types";
 
-interface User {
-  id: number;
-  email: string;
-  name: string;
-  role: string;
-}
 interface AuthState {
   user: User | null;
   token: string | null;
+  error: string | null;
+  isLoading: boolean;
   returnUrl: string | null;
 }
 
+interface AuthResponse {
+  token: string;
+  user: User;
+}
+
+// Enhanced storage helper with type safety
+const storage = {
+  get<T>(key: string): T | null {
+    try {
+      const item = localStorage.getItem(key);
+      return item ? (JSON.parse(item) as T) : null;
+    } catch (error) {
+      console.error(`Error parsing storage item ${key}:`, error);
+      return null;
+    }
+  },
+  set(key: string, value: unknown): void {
+    localStorage.setItem(key, JSON.stringify(value));
+  },
+  remove(key: string): void {
+    localStorage.removeItem(key);
+  },
+  clear(): void {
+    localStorage.clear();
+  },
+};
+
 export const useAuthStore = defineStore("auth", {
   state: (): AuthState => ({
-    user: JSON.parse(localStorage.getItem("user") || "null"),
-    token: localStorage.getItem("token"),
+    user: storage.get<User>("user"),
+    token: storage.get<string>("token"),
     returnUrl: null,
+    isLoading: false,
+    error: null,
   }),
 
   getters: {
     isAuthenticated: (state) => !!state.token,
-    isAdmin: (state) => state.user?.role === "admin",
+    isAdmin: (state): boolean => state.user?.role === "admin",
+    currentUser: (state): User | null => state.user,
   },
 
   actions: {
-    async login(email: string, password: string) {
+    async login(email: string, password: string): Promise<AuthResponse> {
+      this.isLoading = true;
+      this.error = null;
+
       try {
         const response = await authService.login({ email, password });
         this.setAuth(response);
+
+        // Fetch full profile after login
+        // await this.getProfile();
+
+        // Verify role access
+        if (this.returnUrl?.includes("/admin") && !this.isAdmin) {
+          this.clearAuth();
+          throw new Error("Access denied. Admin privileges required.");
+        }
+
         return response;
-      } catch (error: any) {
-        throw new Error(error.response?.data?.message || "Login failed");
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "An unexpected error occurred during login";
+        this.error = message;
+        throw error;
+      } finally {
+        this.isLoading = false;
       }
     },
-    // return url
-    setReturnUrl(url: string | null) {
+
+    setReturnUrl(url: string | null): void {
       this.returnUrl = url;
     },
-    //  logout
-    async logout() {
+
+    async getProfile(): Promise<User> {
+      if (!this.token) {
+        throw new Error("Authentication required");
+      }
+
+      this.isLoading = true;
+      this.error = null;
+
       try {
-        if (!this.token) {
-          throw new Error("No active session");
-        }
-        await authService.logout();
-        this.clearAuth();
-      } catch (error: any) {
-        this.clearAuth();
-        throw new Error(error.response?.data?.message || "Logout failed");
+        const response = await authService.getProfile();
+        this.user = response.user; // Directly assign the user from response
+        storage.set("user", response.user);
+        return response.user;
+      } catch (error: unknown) {
+        this.clearAuth(); // Clear auth if profile fetch fails
+        const message =
+          error instanceof Error ? error.message : "Failed to fetch profile";
+        this.error = message;
+        throw new Error(message);
+      } finally {
+        this.isLoading = false;
       }
     },
-    setAuth(response: { token: string; user: User }) {
+    async logout(): Promise<string> {
+      if (!this.token) return "/";
+
+      this.isLoading = true;
+      this.error = null;
+
+      try {
+        const redirectPath = await authService.logout(this.user?.role);
+        this.clearAuth();
+        return redirectPath;
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error ? error.message : "Logout failed";
+        this.error = message;
+        throw error;
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
+    setAuth(response: AuthResponse): void {
       this.token = response.token;
       this.user = response.user;
-      localStorage.setItem("token", response.token);
-      localStorage.setItem("user", JSON.stringify(response.user));
+      storage.set("token", response.token);
+      storage.set("user", response.user);
     },
-    clearAuth() {
+
+    clearAuth(): void {
       this.token = null;
       this.user = null;
       this.returnUrl = null;
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
+      storage.remove("token");
+      storage.remove("user");
+    },
+
+    clearError(): void {
+      this.error = null;
+    },
+
+    // Additional helper methods
+    async refreshProfile(): Promise<void> {
+      if (this.isAuthenticated) {
+        await this.getProfile();
+      }
+    },
+
+    // Initialize auth state (call this when app starts)
+    async initialize(): Promise<void> {
+      if (this.token) {
+        try {
+          const isValid = await authService.validateToken();
+          if (isValid) {
+            await this.getProfile();
+          } else {
+            this.clearAuth();
+          }
+        } catch (error) {
+          this.clearAuth();
+        }
+      }
     },
   },
 });
