@@ -9,11 +9,6 @@ declare module "vue-router" {
     title?: string;
   }
 }
-const ROUTES = {
-  LOGIN: "/",
-  ADMIN_LOGIN: "/admin/login",
-  // ... other routes
-};
 
 const routes: RouteRecordRaw[] = [
   // user
@@ -73,7 +68,7 @@ const router = createRouter({
   routes,
 });
 
-router.beforeEach(async (to, from, next) => {
+router.beforeEach(async (to, _from, next) => {
   const authStore = useAuthStore();
   document.title = to.meta.title || "Swap Book";
 
@@ -96,7 +91,7 @@ router.beforeEach(async (to, from, next) => {
 
     // Handle admin-only routes
     if (to.meta.requiresAdmin && !authStore.isAdmin) {
-      return next("/"); 
+      return next("/");
     }
   }
 

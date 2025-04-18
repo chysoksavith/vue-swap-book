@@ -7,20 +7,24 @@ import {
   faLock,
   faEye,
   faEyeSlash,
+  faCircleExclamation,
+  faSpinner,
 } from "@fortawesome/free-solid-svg-icons";
 import useVuelidate from "@vuelidate/core";
 import { useAuthStore } from "../../../stores/auth.store";
 import { useRouter } from "vue-router";
 import { required, email, minLength } from "@vuelidate/validators";
-import Swal from "sweetalert2";
+import { useToast } from "vue-toastification";
+
 // Add icons to library
-library.add(faUser, faLock, faEye, faEyeSlash);
+library.add(faUser, faLock, faEye, faEyeSlash, faCircleExclamation, faSpinner);
+
 const router = useRouter();
 const authStore = useAuthStore();
 const showPassword = ref(false);
 const isLoading = ref(false);
 const error = ref("");
-
+const toast = useToast();
 const form = reactive({
   email: "",
   password: "",
@@ -39,19 +43,13 @@ const togglePassword = () => {
 const handleLoginUser = async () => {
   error.value = "";
   const isFormValid = await v$.value.$validate();
+
   if (!isFormValid) return;
 
   try {
     isLoading.value = true;
     const response = await authStore.login(form.email, form.password);
-
-    await Swal.fire({
-      icon: "success",
-      title: "Welcome Back!",
-      text: `Hello, ${response.user.name}!`,
-      timer: 1500,
-      showConfirmButton: false,
-    });
+    toast.success(`Hello, ${response.user.name}!`);
 
     // Role-based redirection
     const redirectPath = authStore.isAdmin
@@ -60,17 +58,14 @@ const handleLoginUser = async () => {
 
     router.push(redirectPath);
   } catch (err: any) {
-    error.value = err.message || "Login failed. Please try again.";
-    await Swal.fire({
-      icon: "error",
-      title: "Login Failed",
-      text: error.value,
-    });
+    error.value =
+      err.response?.data?.message || "Login failed. Please try again.";
   } finally {
     isLoading.value = false;
   }
 };
 </script>
+
 <template>
   <div class="login-container">
     <div class="login-card">
@@ -81,6 +76,7 @@ const handleLoginUser = async () => {
           <font-awesome-icon :icon="['fas', 'circle-exclamation']" />
           {{ error }}
         </div>
+
         <!-- Email Input -->
         <div class="input-group">
           <font-awesome-icon :icon="['fas', 'user']" class="icon" />
@@ -118,12 +114,13 @@ const handleLoginUser = async () => {
 
         <button type="submit" :disabled="isLoading" class="login-button">
           <span v-if="!isLoading">Login</span>
-          <font-awesome-icon v-else icon="spinner" spin />
+          <font-awesome-icon v-else :icon="['fas', 'spinner']" spin />
         </button>
       </form>
     </div>
   </div>
 </template>
+
 <style scoped>
 .error-alert {
   background-color: #fee2e2;
@@ -169,6 +166,7 @@ const handleLoginUser = async () => {
   opacity: 0.7;
   cursor: not-allowed;
 }
+
 .login-container {
   display: flex;
   justify-content: center;
@@ -222,20 +220,5 @@ h2 {
   cursor: pointer;
   color: #888;
   font-size: 18px;
-}
-
-button {
-  width: 100%;
-  padding: 10px;
-  background: #007bff;
-  border: none;
-  color: white;
-  font-size: 16px;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-button:hover {
-  background: #0056b3;
 }
 </style>

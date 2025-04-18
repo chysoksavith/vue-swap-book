@@ -36,7 +36,7 @@
 import { useRouter } from "vue-router";
 import { defineProps } from "vue";
 import { useAuthStore } from "../../stores/auth.store";
-import Swal from "sweetalert2";
+import { useToast } from "vue-toastification";
 
 const props = defineProps({
   user: {
@@ -46,6 +46,7 @@ const props = defineProps({
 });
 const router = useRouter();
 const authStore = useAuthStore();
+const toast = useToast();
 
 const navigateToLogin = () => {
   router.push("/login");
@@ -58,28 +59,13 @@ const navigateToRegister = () => {
 const handleLogoutUser = async () => {
   try {
     await authStore.logout();
+    authStore.clearAuth();
 
-    // Check if the user is an admin and redirect accordingly
-    if (authStore.isAdmin) {
-      router.push("/admin/dashboard");
-    } else {
-      router.push("/");
-    }
-
-    await Swal.fire({
-      icon: "success",
-      title: "Logged Out",
-      text: "You have been successfully logged out",
-      timer: 1500,
-      showConfirmButton: false,
-    });
+    toast.success("You have been successfully logged out");
+    router.push(authStore.isAdmin ? "/admin/login" : "/login");
   } catch (error) {
     console.error("Logout failed:", error);
-    Swal.fire({
-      icon: "error",
-      title: "Logout Failed",
-      text: "An error occurred during logout",
-    });
+    toast.success("You have been successfully logged out");
   }
 };
 </script>

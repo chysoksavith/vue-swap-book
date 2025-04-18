@@ -8,7 +8,7 @@ import {
 } from "../controllers/userController";
 import upload from "../middlewares/uploadMiddleware";
 import { checkBlackListedToken } from "../middlewares/checkBlacklistedToken";
-import { authenticateUser } from "../middlewares/authMiddleware";
+import { authenticateUser, checkRole } from "../middlewares/authMiddleware";
 
 const router = Router();
 
@@ -29,15 +29,16 @@ router.get(
   getProfile as unknown as RequestHandler
 );
 router.get(
-  "/get_all_users",
+  "/",
   authenticateUser as RequestHandler,
+  checkRole(["admin"]) as RequestHandler,
   getAllUsers as RequestHandler
 );
-router.get(
-  "/validate-token",
-  authenticateUser as RequestHandler,
-  (req, res) => {
-    res.status(200).json({ valid: true });
-  }
-);
+// router.get(
+//   "/validate-token",
+//   authenticateUser as RequestHandler,
+//   (req, res) => {
+//     res.status(200).json({ valid: true });
+//   }
+// );
 export default router;

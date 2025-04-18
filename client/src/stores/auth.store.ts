@@ -23,24 +23,25 @@ const storage = {
       return item ? (JSON.parse(item) as T) : null;
     } catch (error) {
       console.error(`Error parsing storage item ${key}:`, error);
-      return null;
+      return null; // Return null instead of undefined item
     }
   },
   set(key: string, value: unknown): void {
-    localStorage.setItem(key, JSON.stringify(value));
+    if (typeof value === "string") {
+      localStorage.setItem(key, value); // Store strings directly (e.g., token)
+    } else {
+      localStorage.setItem(key, JSON.stringify(value)); // Stringify objects
+    }
   },
   remove(key: string): void {
     localStorage.removeItem(key);
-  },
-  clear(): void {
-    localStorage.clear();
   },
 };
 
 export const useAuthStore = defineStore("auth", {
   state: (): AuthState => ({
-    user: storage.get<User>("user"),
-    token: storage.get<string>("token"),
+    user: JSON.parse(localStorage.getItem("user") || "null"),
+    token: localStorage.getItem("token"),
     returnUrl: null,
     isLoading: false,
     error: null,
@@ -60,10 +61,6 @@ export const useAuthStore = defineStore("auth", {
       try {
         const response = await authService.login({ email, password });
         this.setAuth(response);
-
-        // Fetch full profile after login
-        // await this.getProfile();
-
         // Verify role access
         if (this.returnUrl?.includes("/admin") && !this.isAdmin) {
           this.clearAuth();
@@ -87,29 +84,29 @@ export const useAuthStore = defineStore("auth", {
       this.returnUrl = url;
     },
 
-    async getProfile(): Promise<User> {
-      if (!this.token) {
-        throw new Error("Authentication required");
-      }
+    // async getProfile(): Promise<User> {
+    //   if (!this.token) {
+    //     throw new Error("Authentication required");
+    //   }
 
-      this.isLoading = true;
-      this.error = null;
+    //   this.isLoading = true;
+    //   this.error = null;
 
-      try {
-        const response = await authService.getProfile();
-        this.user = response.user; // Directly assign the user from response
-        storage.set("user", response.user);
-        return response.user;
-      } catch (error: unknown) {
-        this.clearAuth(); // Clear auth if profile fetch fails
-        const message =
-          error instanceof Error ? error.message : "Failed to fetch profile";
-        this.error = message;
-        throw new Error(message);
-      } finally {
-        this.isLoading = false;
-      }
-    },
+    //   try {
+    //     const response = await authService.getProfile();
+    //     this.user = response.user; // Directly assign the user from response
+    //     storage.set("user", response.user);
+    //     return response.user;
+    //   } catch (error: unknown) {
+    //     this.clearAuth(); // Clear auth if profile fetch fails
+    //     const message =
+    //       error instanceof Error ? error.message : "Failed to fetch profile";
+    //     this.error = message;
+    //     throw new Error(message);
+    //   } finally {
+    //     this.isLoading = false;
+    //   }
+    // },
     async logout(): Promise<string> {
       if (!this.token) return "/";
 
@@ -131,12 +128,13 @@ export const useAuthStore = defineStore("auth", {
     },
 
     setAuth(response: AuthResponse): void {
-      this.token = response.token;
+      const token = response.token.trim(); // Remove any spaces
+      this.token = token;
       this.user = response.user;
-      storage.set("token", response.token);
+      storage.set("token", token); // Store raw token
       storage.set("user", response.user);
+     
     },
-
     clearAuth(): void {
       this.token = null;
       this.user = null;
@@ -150,20 +148,18 @@ export const useAuthStore = defineStore("auth", {
     },
 
     // Additional helper methods
-    async refreshProfile(): Promise<void> {
-      if (this.isAuthenticated) {
-        await this.getProfile();
-      }
-    },
+    // async refreshProfile(): Promise<void> {
+    //   if (this.isAuthenticated) {
+    //     await this.getProfile();
+    //   }
+    // },
 
     // Initialize auth state (call this when app starts)
     async initialize(): Promise<void> {
       if (this.token) {
         try {
           const isValid = await authService.validateToken();
-          if (isValid) {
-            await this.getProfile();
-          } else {
+          if (!isValid) {
             this.clearAuth();
           }
         } catch (error) {

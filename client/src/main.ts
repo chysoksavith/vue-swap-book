@@ -5,12 +5,14 @@ import router from "./routers";
 import "./assets/styles/index.css";
 import { createPinia } from "pinia";
 import { library } from "@fortawesome/fontawesome-svg-core";
+import Toast from "vue-toastification";
+import "vue-toastification/dist/index.css";
 import {
   faHome,
   faBox,
   faUsers,
   faEllipsisV,
-  faSpinner
+  faSpinner,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
@@ -21,6 +23,19 @@ const app = createApp(App);
 
 // Register FontAwesomeIcon as a global component
 app.component("font-awesome-icon", FontAwesomeIcon);
+app.use(Toast, {
+  position: "top-right",
+  timeout: 5000,
+  closeOnClick: true,
+  hideProgressBar: false,
+  newestOnTop: true,
+  pauseOnHover: true,
+  rtl: false,
+  transition: "Vue-Toastification__bounce", 
+  maxToasts: 5,
+  closeButton: "button",
+  icon: true,
+});
 app.use(createPinia());
 app.use(router);
 app.mount("#app");
