@@ -63,7 +63,7 @@ const handleLogoutUser = async () => {
     if (authStore.isAdmin) {
       router.push("/admin/dashboard");
     } else {
-      router.push("/"); // For regular user
+      router.push("/");
     }
 
     await Swal.fire({

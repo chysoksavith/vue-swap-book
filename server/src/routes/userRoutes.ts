@@ -4,6 +4,7 @@ import {
   login,
   logout,
   getProfile,
+  getAllUsers,
 } from "../controllers/userController";
 import upload from "../middlewares/uploadMiddleware";
 import { checkBlackListedToken } from "../middlewares/checkBlacklistedToken";
@@ -26,5 +27,17 @@ router.get(
   "/profile",
   authenticateUser as RequestHandler,
   getProfile as unknown as RequestHandler
+);
+router.get(
+  "/get_all_users",
+  authenticateUser as RequestHandler,
+  getAllUsers as RequestHandler
+);
+router.get(
+  "/validate-token",
+  authenticateUser as RequestHandler,
+  (req, res) => {
+    res.status(200).json({ valid: true });
+  }
 );
 export default router;

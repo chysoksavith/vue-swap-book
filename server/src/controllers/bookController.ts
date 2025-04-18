@@ -25,7 +25,12 @@ export const getBooks = async (req: Request, res: Response) => {
       success: true,
       books: books,
     });
-  } catch (error) {}
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch books",
+    });
+  }
 };
 // get book by id
 export const getBookById = async (req: Request, res: Response) => {

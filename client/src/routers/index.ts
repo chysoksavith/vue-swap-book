@@ -10,7 +10,7 @@ declare module "vue-router" {
   }
 }
 const ROUTES = {
-  LOGIN: "/login",
+  LOGIN: "/",
   ADMIN_LOGIN: "/admin/login",
   // ... other routes
 };
@@ -73,34 +73,6 @@ const router = createRouter({
   routes,
 });
 
-// router.beforeEach(async (to, _from, next) => {
-//   const authStore = useAuthStore();
-//   document.title = to.meta.title || "Swap Book";
-
-//   // Handle guest-only routes (like login pages)
-//   if (to.meta.requiresGuest && authStore.isAuthenticated) {
-//     return next(authStore.isAdmin ? "/admin/dashboard" : "/");
-//   }
-
-//   // Handle protected routes
-//   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-//     authStore.setReturnUrl(to.fullPath);
-//     return next("/admin/login");
-//   }
-
-//   // Handle admin-only routes
-//   if (to.meta.requiresAdmin) {
-//     if (!authStore.isAuthenticated) {
-//       authStore.setReturnUrl(to.fullPath);
-//       return next("/admin/login");
-//     }
-//     if (!authStore.isAdmin) {
-//       return next("/");
-//     }
-//   }
-
-//   next();
-// });
 router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore();
   document.title = to.meta.title || "Swap Book";
@@ -119,12 +91,12 @@ router.beforeEach(async (to, from, next) => {
   if (to.meta.requiresAuth) {
     if (!authStore.isAuthenticated) {
       authStore.setReturnUrl(to.fullPath);
-      return next(authStore.isAdmin ? "/admin/login" : "/login");
+      return next(authStore.isAdmin ? "/admin/login" : "/");
     }
 
     // Handle admin-only routes
     if (to.meta.requiresAdmin && !authStore.isAdmin) {
-      return next("/"); // Redirect non-admin users to home
+      return next("/"); 
     }
   }
 
