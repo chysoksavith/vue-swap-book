@@ -7,6 +7,7 @@ import { createPinia } from "pinia";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import Toast from "vue-toastification";
 import "vue-toastification/dist/index.css";
+import "vue-awesome-paginate/dist/style.css";
 import {
   faHome,
   faBox,
@@ -31,7 +32,7 @@ app.use(Toast, {
   newestOnTop: true,
   pauseOnHover: true,
   rtl: false,
-  transition: "Vue-Toastification__bounce", 
+  transition: "Vue-Toastification__bounce",
   maxToasts: 5,
   closeButton: "button",
   icon: true,

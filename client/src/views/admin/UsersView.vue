@@ -1,10 +1,200 @@
 <template>
+  <div class="mx-auto">
+    <!-- analytics Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <!-- total users -->
+      <div class="card bg-base-100 shadow">
+        <div class="card-body">
+          <h2 class="card-title text-sm text-gray-500">Total Users</h2>
+          <p class="text-3xl font-bold">{{ counts.total || 0 }}</p>
+          <div class="flex justify-between text-xs mt-2">
+            <span class="text-green-600">↑ 12% from last month</span>
+          </div>
+        </div>
+      </div>
+      <!-- By Role -->
+      <div class="card bg-base-100 shadow">
+        <div class="card-body">
+          <h2 class="card-title text-sm text-gray-500">By Role</h2>
+          <div class="flex justify-between">
+            <div>
+              <p class="text-xs text-gray-500">Admin</p>
+              <p class="text-xl font-bold">{{ counts.byRole?.admin || 0 }}</p>
+            </div>
+            <div>
+              <p class="text-xs text-gray-500">User</p>
+              <p class="text-xl font-bold">{{ counts.byRole?.user }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- By Gender -->
+      <div class="card bg-base-100 shadow">
+        <div class="card-body">
+          <h2 class="card-title text-sm text-gray-500">By Gender</h2>
+          <div class="flex justify-between">
+            <div>
+              <p class="text-xs text-gray-500">Male</p>
+              <p class="text-xl font-bold">{{ counts.byGender?.male || 0 }}</p>
+            </div>
+            <div>
+              <p class="text-xs text-gray-500">Female</p>
+              <p class="text-xl font-bold">
+                {{ counts.byGender?.female || 0 }}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- By Status -->
+      <div class="card bg-base-100 shadow">
+        <div class="card-body">
+          <h2 class="card-title text-sm text-gray-500">By Status</h2>
+          <div class="flex justify-between">
+            <div>
+              <p class="text-xs text-gray-500">Active</p>
+              <p class="text-xl font-bold">
+                {{ counts.byStatus?.active || 0 }}
+              </p>
+            </div>
+            <div>
+              <p class="text-xs text-gray-500">Inactive</p>
+              <p class="text-xl font-bold">
+                {{ counts.byStatus?.inactive || 0 }}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
   <div class="card bg-base-100 shadow col-span-1 lg:col-span-3">
     <div class="card-body">
       <div class="flex justify-between items-center mb-3">
-        <h2 class="card-title">User</h2>
+        <h2 class="card-title">User Management</h2>
         <button class="btn btn-sm btn-primary">Create</button>
       </div>
+      <!-- advance filter -->
+      <div class="bg-gray-50 p-4 rounded-lg mb-4">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <!-- search input -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">Search</span>
+            </label>
+            <input
+              type="text"
+              placeholder="Name, Email, Phone"
+              v-model="filters.search"
+              @input="handleSearch"
+              class="input input-bordered w-full"
+            />
+          </div>
+          <!-- role filter -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">Role</span>
+            </label>
+            <select
+              class="select select-bordered w-full"
+              v-model="filters.role"
+              @change="fetchUsers"
+            >
+              <option value="">All Roles</option>
+              <option value="admin">Admin</option>
+              <option value="user">User</option>
+            </select>
+          </div>
+          <!-- gender filter -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">Gender</span>
+            </label>
+            <select
+              class="select select-bordered w-full"
+              v-model="filters.gender"
+              @change="fetchUsers"
+            >
+              <option value="">All Genders</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+            </select>
+          </div>
+          <!-- status filter -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">Status</span>
+            </label>
+            <select
+              class="select select-bordered w-full"
+              v-model="filters.is_active"
+              @change="fetchUsers"
+            >
+              <option value="">All Statuses</option>
+              <option value="true">Active</option>
+              <option value="false">Inactive</option>
+            </select>
+          </div>
+        </div>
+        <!-- Date Range Filter -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">Date Range</span>
+            </label>
+            <div class="flex space-x-2">
+              <input
+                type="date"
+                class="input input-bordered w-full"
+                v-model="filters.date_from"
+                @change="fetchUsers"
+              />
+              <input
+                type="date"
+                class="input input-bordered w-full"
+                v-model="filters.date_to"
+                @change="fetchUsers"
+              />
+            </div>
+          </div>
+
+          <!-- Filter Actions -->
+          <div class="form-control flex flex-col justify-end">
+            <div class="flex space-x-2">
+              <button class="btn btn-secondary" @click="resetFilters">
+                Reset
+              </button>
+              <button class="btn btn-primary" @click="fetchUsers">
+                Apply Filters
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- loading state -->
+      <div v-if="isLoading" class="flex justify-center items-center h-64">
+        <span class="loading loading-spinner loading-lg"></span>
+      </div>
+      <!-- Error State -->
+      <div v-else-if="error" class="alert alert-error shadow-lg">
+        <div>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="stroke-current flex-shrink-0 h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+          <span>Error: {{ error }}</span>
+        </div>
+      </div>
+      <!-- table -->
       <div class="overflow-x-auto">
         <table class="table">
           <thead class="bg-gray-100">
@@ -21,6 +211,34 @@
             </tr>
           </thead>
           <tbody>
+            <tr v-if="users.length === 0">
+              <td colspan="9" class="text-center py-8">
+                <div class="flex flex-col items-center justify-center gap-2">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="h-12 w-12 text-gray-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="1.5"
+                      d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  <p class="text-gray-500 font-medium">No users found</p>
+                  <button
+                    v-if="Object.values(filters).some((val) => val !== '')"
+                    @click="resetFilters"
+                    class="btn btn-sm btn-outline mt-2"
+                  >
+                    Clear filters
+                  </button>
+                </div>
+              </td>
+            </tr>
             <tr
               v-for="user in users"
               :key="user.id"
@@ -134,12 +352,40 @@
           </tbody>
         </table>
       </div>
+      <!-- pagination -->
+      <div
+        class="flex flex-col md:flex-row justify-between items-center mt-4 gap-4"
+        v-if="pagination.total > 0 && !isLoading"
+      >
+        <div class="text-sm text-gray-600">
+          Showing {{ (currentPage - 1) * pagination.limit + 1 }} to
+          {{ Math.min(currentPage * pagination.limit, pagination.total) }} of
+          {{ pagination.total }} entries
+        </div>
+        <vue-awesome-paginate
+          v-model="currentPage"
+          :total-items="pagination.total"
+          :items-per-page="pagination.limit"
+          :max-pages-shown="5"
+          :show-breakpoint-buttons="false"
+          :show-jump-buttons="false"
+        >
+          <template #prev-button>
+            <span class="pagination-button"> &laquo; </span>
+          </template>
+          <template #next-button>
+            <span class="pagination-button"> &raquo; </span>
+          </template>
+        </vue-awesome-paginate>
+      </div>
     </div>
   </div>
 </template>
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { onMounted, ref, watch } from "vue";
 import api from "../../config/axios";
+import { VueAwesomePaginate } from "vue-awesome-paginate";
+
 interface User {
   id: number;
   name: string;
@@ -153,19 +399,193 @@ interface User {
   created_at: string;
   updated_at: string;
 }
+interface Counts {
+  total: number;
+  byRole: {
+    admin: number;
+    user: number;
+  };
+  byGender: {
+    male: number;
+    female: number;
+  };
+  byStatus: {
+    active: number;
+    inactive: number;
+  };
+}
+interface Pagination {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
 
 const users = ref<User[]>([]);
+const counts = ref<Counts>({
+  total: 0,
+  byRole: { admin: 0, user: 0 },
+  byGender: { male: 0, female: 0 },
+  byStatus: { active: 0, inactive: 0 },
+});
+const pagination = ref<Pagination>({
+  total: 0,
+  page: 1,
+  limit: 15,
+  totalPages: 1,
+});
 const isLoading = ref(true);
 const error = ref("");
+const currentPage = ref(1);
 
-onMounted(async () => {
+const filters = ref({
+  search: "",
+  role: "",
+  gender: "",
+  is_active: "",
+  date_from: "",
+  date_to: "",
+  sort_by: "created_at",
+  sort_order: "DESC",
+});
+let searchTimeout: number | null = null;
+
+const handleSearch = () => {
+  if (searchTimeout) {
+    clearTimeout(searchTimeout);
+  }
+  searchTimeout = setTimeout(() => {
+    currentPage.value = 1;
+    fetchUsers();
+  }, 500);
+};
+const resetFilters = () => {
+  filters.value = {
+    search: "",
+    role: "",
+    gender: "",
+    is_active: "",
+    date_from: "",
+    date_to: "",
+    sort_by: "created_at",
+    sort_order: "DESC",
+  };
+  currentPage.value = 1;
+  fetchUsers();
+};
+// watch for page change
+watch(currentPage, (newPage) => {
+  fetchUsers();
+});
+const fetchUsers = async () => {
+  isLoading.value = true;
+  error.value = "";
   try {
-    const { data } = await api.get<{ users: User[] }>("/users");
-    users.value = data.users;
-    console.log(users.value);
-  } catch (err: unknown) {
+    const params = {
+      page: currentPage.value,
+      limit: pagination.value.limit,
+      ...filters.value,
+      // Ensure date rande is only sendif both date are present
+      ...(filters.value.date_from && filters.value.date_to
+        ? {
+            date_from: filters.value.date_from,
+            date_to: filters.value.date_to,
+          }
+        : {}),
+    };
+    const { data } = await api.get("/users", { params });
+    users.value = data.data || data.users;
+    counts.value = {
+      total: data.pagination.total,
+      byRole: data.counts.byRole,
+      byGender: data.counts.byGender,
+      byStatus: data.counts.byStatus,
+    };
+    pagination.value = {
+      total: data.pagination.total,
+      page: data.pagination.page || currentPage.value,
+      limit: data.pagination.limit,
+      totalPages: data.pagination.totalPages,
+    };
+    // Ensure currentPage doesn't exceed total pages
+    if (currentPage.value > data.pagination.totalPages) {
+      currentPage.value = data.pagination.totalPages;
+    }
+  } catch (err: any) {
+    error.value = err.response?.data?.message || "Failed to fetch users";
+    console.error("Error fetching users:", err);
   } finally {
     isLoading.value = false;
   }
+};
+onMounted(async () => {
+  fetchUsers();
 });
 </script>
+<style scoped>
+.pagination-container {
+  display: flex;
+  column-gap: 6px;
+  align-items: center;
+}
+
+.paginate-buttons {
+  height: 35px;
+  width: 35px;
+  border-radius: 6px;
+  cursor: pointer;
+  background-color: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  color: #4b5563;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+}
+
+.paginate-buttons:hover {
+  background-color: #e5e7eb;
+  color: #1f2937;
+}
+
+.active-page {
+  background-color: #3b82f6;
+  border-color: #3b82f6;
+  color: white;
+}
+
+.active-page:hover {
+  background-color: #2563eb;
+  color: white;
+}
+
+.pagination-button {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 35px;
+  width: 35px;
+  border-radius: 6px;
+  cursor: pointer;
+  background-color: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  color: #4b5563;
+  transition: all 0.2s ease;
+}
+
+.pagination-button:hover {
+  background-color: #e5e7eb;
+  color: #1f2937;
+}
+
+.break-label {
+  height: 35px;
+  width: 35px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #9ca3af;
+  cursor: default;
+}
+</style>

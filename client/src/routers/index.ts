@@ -50,8 +50,17 @@ const routes: RouteRecordRaw[] = [
       {
         path: "users",
         component: () => import("../views/admin/UsersView.vue"),
+        name: "users-list-admin",
         meta: {
           title: "Dashboard | User",
+        },
+      },
+      {
+        path: "profile",
+        component: () => import("../views/admin/auth/Profile.vue"),
+        name: "profile-admin",
+        meta: {
+          title: "Dashboard | Profile",
         },
       },
     ],

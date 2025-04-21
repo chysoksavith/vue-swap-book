@@ -11,8 +11,7 @@ const api = axios.create({
 // Request interceptor
 api.interceptors.request.use((config) => {
   const authStore = useAuthStore();
-  const token = authStore.token || localStorage.getItem("token");
-
+  const token = authStore.token;
   if (token) {
     config.headers.Authorization = `Bearer ${token
       .replace(/^"(.*)"$/, "$1")

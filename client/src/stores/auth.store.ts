@@ -1,6 +1,8 @@
 import { defineStore } from "pinia";
 import { authService } from "../services/auth.service";
 import type { User } from "../types/auth.types";
+import type { UserProfile } from "../types/profile.type";
+import { useProfileStore } from "./profileUser.store";
 
 interface AuthState {
   user: User | null;
@@ -40,7 +42,7 @@ const storage = {
 
 export const useAuthStore = defineStore("auth", {
   state: (): AuthState => ({
-    user: JSON.parse(localStorage.getItem("user") || "null"),
+    user: storage.get<User>("user"),
     token: localStorage.getItem("token"),
     returnUrl: null,
     isLoading: false,
@@ -84,7 +86,7 @@ export const useAuthStore = defineStore("auth", {
       this.returnUrl = url;
     },
 
-    // async getProfile(): Promise<User> {
+    // async getProfile(): Promise<UserProfile> {
     //   if (!this.token) {
     //     throw new Error("Authentication required");
     //   }
@@ -94,11 +96,10 @@ export const useAuthStore = defineStore("auth", {
 
     //   try {
     //     const response = await authService.getProfile();
-    //     this.user = response.user; // Directly assign the user from response
-    //     storage.set("user", response.user);
+    //     this.user = response.user; // Update global state
     //     return response.user;
     //   } catch (error: unknown) {
-    //     this.clearAuth(); // Clear auth if profile fetch fails
+    //     this.clearAuth();
     //     const message =
     //       error instanceof Error ? error.message : "Failed to fetch profile";
     //     this.error = message;
@@ -115,6 +116,8 @@ export const useAuthStore = defineStore("auth", {
 
       try {
         const redirectPath = await authService.logout(this.user?.role);
+        const profileStore = useProfileStore();
+        profileStore.clearProfile();
         this.clearAuth();
         return redirectPath;
       } catch (error: unknown) {
@@ -133,7 +136,6 @@ export const useAuthStore = defineStore("auth", {
       this.user = response.user;
       storage.set("token", token); // Store raw token
       storage.set("user", response.user);
-     
     },
     clearAuth(): void {
       this.token = null;

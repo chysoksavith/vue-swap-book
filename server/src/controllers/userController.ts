@@ -92,8 +92,6 @@ export const login = async (req: Request, res: Response) => {
         email: user.email,
         name: user.name,
         role: user.role,
-        phone: user.phone || null,
-        address: user.address || null,
         profile_image: user.profile_image || null,
       },
 
@@ -111,8 +109,6 @@ export const login = async (req: Request, res: Response) => {
         name: user.name,
         email: user.email,
         role: user.role,
-        phone: user.phone || null,
-        address: user.address || null,
         profile_image: user.profile_image || null,
       },
     });

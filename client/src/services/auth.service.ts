@@ -1,5 +1,5 @@
 import api from "../config/axios";
-import type { User } from "../types/profile.type";
+import type { UserProfile } from "../types/profile.type";
 
 interface LoginCredentials {
   email: string;
@@ -32,9 +32,9 @@ export const authService = {
     }
   },
   // get profile
-  async getProfile(): Promise<{ user: User }> {
+  async getProfile(): Promise<{ user: UserProfile }> {
     try {
-      const { data } = await api.get<User>("/users/profile");
+      const { data } = await api.get<UserProfile>("/users/profile");
       return { user: data };
     } catch (error: any) {
       console.error("Profile fetch error:", error);
