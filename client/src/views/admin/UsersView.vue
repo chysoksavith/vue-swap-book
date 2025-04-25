@@ -256,11 +256,12 @@
                 <td class="p-3">{{ user.phone || "-" }}</td>
                 <td class="p-3 capitalize">{{ user.gender || "-" }}</td>
                 <td class="p-3">
-                  <span
-                    :class="user.is_active ? 'text-green-600' : 'text-red-500'"
-                  >
-                    {{ user.is_active ? "Yes" : "No" }}
-                  </span>
+                  <input
+                    type="checkbox"
+                    :checked="user.is_active === 1"
+                    @change="handleUserUpdateStatus(user)"
+                    class="toggle toggle-success"
+                  />
                 </td>
                 <td class="p-3">
                   <span
@@ -517,6 +518,18 @@ const handleCreationError = (error: { message: string }) => {
     text: error.message,
     timer: 4000,
   });
+};
+// update user status
+const handleUserUpdateStatus = async (user: User) => {
+  try {
+    const newStatus = user.is_active === 1 ? false : true;
+    await api.patch(`/users/${user.id}/status`, { is_active: newStatus });
+    user.is_active = newStatus ? 1 : 0;
+    useToast().success("User status updated successfully");
+  } catch (error) {
+    useToast().error("Failed to update user status");
+    user.is_active = user.is_active === 1 ? 0 : 1;
+  }
 };
 onMounted(async () => {
   fetchUsers();

@@ -7,7 +7,7 @@ export interface User {
   role: string;
   profile_image: string;
   gender: string;
-  is_active: boolean;
+  is_active: number;
   created_at: string;
   updated_at: string;
 }

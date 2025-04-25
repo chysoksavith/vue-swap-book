@@ -1,5 +1,11 @@
 <template>
-  <div class="p-6 w-full mx-auto">
+  <div v-if="isLoading" class="flex justify-center items-center min-h-[60vh]">
+    <div class="flex flex-col items-center gap-4">
+      <span class="loading loading-spinner loading-lg text-primary"></span>
+      <p class="text-gray-500 font-medium">Loading profile data...</p>
+    </div>
+  </div>
+  <div v-else class="p-6 w-full mx-auto">
     <!-- Profile Header -->
     <div
       class="flex flex-col md:flex-row items-start md:items-center gap-6 mb-8"
@@ -69,7 +75,6 @@
         </button>
       </div>
     </div>
-
     <!-- Profile Tabs -->
     <div class="tabs tabs-boxed bg-base-200 mb-8">
       <a class="tab tab-active">Profile</a>
@@ -353,14 +358,17 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from "vue";
+import { onMounted, ref } from "vue";
 import { useProfileStore } from "../../../stores/profileUser.store";
 
 const profileUser = useProfileStore();
+const isLoading = ref(true);
 onMounted(async () => {
   if (!profileUser.userProfile) {
-    const response = await profileUser.fetchProfile();
-    console.log("profile", response);
+    await profileUser.fetchProfile();
   }
+  setTimeout(() => {
+    isLoading.value = false;
+  }, 1000);
 });
 </script>

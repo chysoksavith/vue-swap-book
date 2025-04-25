@@ -429,3 +429,38 @@ export const getAllUsers = async (req: Request, res: Response) => {
     });
   }
 };
+// update user status
+export const updateUserStatus = async (req: Request, res: Response) => {
+  try {
+    const userId = req.params.id;
+    const { is_active } = req.body;
+
+    if (typeof is_active !== "boolean") {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid is_active value. Must be a boolean.",
+      });
+    }
+    // update user status
+    const [result] = await pool.query(
+      "UPDATE users SET is_active = ? WHERE id = ?",
+      [is_active, userId]
+    );
+    if ((result as any).affectedRows === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+    return res.status(200).json({
+      success: true,
+      message: "User status updated successfully",
+    });
+  } catch (error) {
+    console.error("Update user status error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update user status",
+    });
+  }
+};

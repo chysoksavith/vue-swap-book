@@ -53,12 +53,15 @@ export const authService = {
       await api.post("/users/logout");
       localStorage.removeItem("token");
       localStorage.removeItem("user");
+      sessionStorage.removeItem("authState");
 
       // Clear return URL to prevent redirect loops
       localStorage.removeItem("returnUrl");
 
       return role === "admin" ? "/admin/login" : "/login";
     } catch (error: any) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
       throw new Error(error.response?.data?.message || "Logout failed");
     }
   },

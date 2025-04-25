@@ -5,6 +5,7 @@ import {
   logout,
   getProfile,
   getAllUsers,
+  updateUserStatus,
 } from "../controllers/userController";
 import upload from "../middlewares/uploadMiddleware";
 import { checkBlackListedToken } from "../middlewares/checkBlacklistedToken";
@@ -26,6 +27,7 @@ router.post(
 router.get(
   "/profile",
   authenticateUser as RequestHandler,
+  checkRole(["admin"]) as RequestHandler,
   getProfile as unknown as RequestHandler
 );
 router.get(
@@ -33,6 +35,12 @@ router.get(
   authenticateUser as RequestHandler,
   checkRole(["admin"]) as RequestHandler,
   getAllUsers as RequestHandler
+);
+router.patch(
+  "/:id/status",
+  authenticateUser as RequestHandler,
+  checkRole(["admin"]) as RequestHandler,
+  updateUserStatus as unknown as RequestHandler
 );
 // router.get(
 //   "/validate-token",
