@@ -15,7 +15,7 @@ const router = Router();
 router.post(
   "/register",
   upload.single("profile_image"),
-  register as RequestHandler
+  register as unknown as RequestHandler
 );
 router.post("/login", login as RequestHandler);
 router.post(

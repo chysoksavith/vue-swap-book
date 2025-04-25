@@ -15,46 +15,166 @@ declare module "express" {
   }
 }
 interface UserRow extends User, RowDataPacket {}
+// export const register = async (req: Request, res: Response) => {
+//   try {
+//     const {
+//       name,
+//       email,
+//       password,
+//       bio = null,
+//       gender = null,
+//       phone = null,
+//       address = null,
+//       postal_code = null,
+//       country = null,
+//       role = "user",
+//     } = req.body;
+//     // validation
+//     if (!name || !email || !password) {
+//       return res.status(400).json({
+//         message: "Name, email, and password are required",
+//       });
+//     }
+//     let imageUrl = null;
+//     // handle file request
+//     if (req.file) {
+//       const base64image = req.file.buffer.toString("base64");
+//       const dataURI = `data:${req.file.mimetype};base64,${base64image}`; // Fixed semicolon spacing
+//       imageUrl = await uploadToCloudinary(dataURI);
+//     } else {
+//       imageUrl = null;
+//     }
+//     // handle hash password
+//     const hashedPassword = await bcrypt.hash(password, 10);
+//     const sql = "SELECT id FROM users WHERE email = ?";
+//     const [existingUser] = await pool.query(sql, [email]);
+//     if ((existingUser as any).length > 0) {
+//       return res.status(400).json({
+//         message: "Email already exists",
+//       });
+//     }
+
+//     // creating user
+//     const sql2 = `
+//     INSERT INTO users (
+//       name,
+//       email,
+//       password,
+//       bio,
+//       gender,
+//       phone,
+//       address,
+//       postal_code,
+//       country,
+//       profile_image,
+//       role,
+//       trust_score,
+//       is_verified,
+//       is_active,
+//       created_at,
+//       updated_at
+//     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+//   `;
+
+//     res.status(201).json({
+//       message: "User created successfully",
+//     });
+//   } catch (error) {
+//     console.error("Registration error:", error);
+//     res.status(400).json({
+//       message: "Registration failed",
+//     });
+//   }
+// };
 export const register = async (req: Request, res: Response) => {
   try {
-    const { name, email, password, phone, address, role } = req.body;
-    let imageUrl = null;
-    // handle file request
-    if (req.file) {
-      const base64image = req.file.buffer.toString("base64");
-      const dataURI = `data:${req.file.mimetype};base64,${base64image}`; // Fixed semicolon spacing
-      imageUrl = await uploadToCloudinary(dataURI);
-    } else {
-      imageUrl = null;
-    }
-    // handle hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const sql = "SELECT id FROM users WHERE email = ?";
-    const [existingUser] = await pool.query(sql, [email]);
-    if ((existingUser as any).length > 0) {
+    const {
+      name,
+      email,
+      password,
+      bio = null,
+      gender = null,
+      phone = null,
+      address = null,
+      postal_code = null,
+      country = null,
+      role = "user",
+    } = req.body;
+
+    // 1. Basic validation
+    if (!name || !email || !password) {
       return res.status(400).json({
-        message: "Email already exists",
+        success: false,
+        message: "Name, email, and password are required.",
       });
     }
-    // creating user
-    const sql2 =
-      "INSERT INTO users (name, email, password, phone, address, profile_image, role) VALUES (?, ?, ?, ?, ?, ?, ?)";
-    await pool.query(sql2, [
+
+    // 2. Check if email already exists
+    const [existing] = await pool.query(
+      "SELECT id FROM users WHERE email = ?",
+      [email]
+    );
+    if ((existing as any[]).length > 0) {
+      return res.status(409).json({
+        success: false,
+        message: "Email is already registered.",
+      });
+    }
+
+    // 3. Handle profile image (optional)
+    let imageUrl: string | null = null;
+    if (req.file) {
+      const base64image = req.file.buffer.toString("base64");
+      const dataURI = `data:${req.file.mimetype};base64,${base64image}`;
+      imageUrl = await uploadToCloudinary(dataURI);
+    }
+
+    // 4. Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // 5. Insert user into database
+    const insertSql = `
+      INSERT INTO users (
+        name, email, password, bio, gender, phone, address,
+        postal_code, country, profile_image, role,
+        trust_score, is_verified, is_active, created_at, updated_at
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+    `;
+    const [result] = await pool.query(insertSql, [
       name,
       email,
       hashedPassword,
+      bio,
+      gender,
       phone,
       address,
+      postal_code,
+      country,
       imageUrl,
-      role || "user",
+      role,
+      0, // trust_score default
+      false, // is_verified default
+      true, // is_active default
     ]);
-    res.status(201).json({
-      message: "User created successfully",
+
+    return res.status(201).json({
+      success: true,
+      message: "User registered successfully.",
+      user: {
+        id: (result as any).insertId,
+        name,
+        email,
+        profile_image: imageUrl,
+        role,
+        is_verified: false,
+      },
     });
   } catch (error) {
     console.error("Registration error:", error);
-    res.status(400).json({
-      message: "Registration failed",
+    return res.status(500).json({
+      success: false,
+      message: "Server error. Please try again later.",
     });
   }
 };

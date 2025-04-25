@@ -3,22 +3,22 @@
     class="menu p-4 w-80 min-h-full bg-base-100 text-base-content border-r border-base-300"
   >
     <!-- Sidebar header -->
-    <div class="flex items-center mb-4 p-2">
-      <div class="flex items-center space-x-2">
-        <div class="avatar">
-          <div
-            class="w-10 rounded-full bg-primary text-primary-content flex items-center justify-center"
-          >
-            <span class="text-xl font-bold">D</span>
-          </div>
+    <div class="flex items-center mb-4">
+      <div class="flex items-center space-x-3">
+        <div class=" w-16 h-16 flex items-center justify-center">
+          <img
+            src="../../assets/swapbooklogo.png"
+            alt="SwapBook Logo"
+            class="w-full h-full object-contain"
+            onerror="this.src='../../assets/logo-fallback.svg'; this.alt='SwapBook Logo Fallback'"
+          />
         </div>
         <div>
-          <h1 class="text-xl font-bold">Dashboard</h1>
-          <p class="text-xs opacity-70">v1.0.0</p>
+          <h1 class="text-xl font-semibold text-gray-900">SwapBook</h1>
+          <p class="text-xs text-gray-500">v1.0.0</p>
         </div>
       </div>
     </div>
-
     <!-- Sidebar content -->
     <ul class="flex-1 space-y-1">
       <NavItem to="/admin/dashboard" icon="home" label="Dashboard" />
