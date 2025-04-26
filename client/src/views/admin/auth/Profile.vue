@@ -27,13 +27,11 @@
         <h1 class="text-2xl font-bold text-gray-800">
           {{ profileUser.userProfile?.name }}
         </h1>
-        <p class="text-gray-600">
-          {{ profileUser.userProfile?.role || "Administrator" }}
-          {{ profileUser.userProfile?.address || "Administrator" }}
-          {{ profileUser.userProfile?.phone || "Administrator" }}
-        </p>
+
         <div class="flex flex-wrap gap-2 mt-2">
-          <span class="badge badge-primary">Super Admin</span>
+          <span class="badge badge-primary">{{
+            profileUser.userProfile?.role
+          }}</span>
           <span class="badge badge-secondary">Verified</span>
           <span class="badge badge-accent">Active</span>
         </div>
@@ -111,25 +109,25 @@
               <label class="label">
                 <span class="label-text text-gray-500">Full Name</span>
               </label>
-              <p class="font-medium">Sarah M. Johnson</p>
+              <p class="font-medium">{{ profileUser.userProfile?.name }}</p>
             </div>
             <div>
               <label class="label">
                 <span class="label-text text-gray-500">Email</span>
               </label>
-              <p class="font-medium">sarah.johnson@example.com</p>
+              <p class="font-medium">{{ profileUser.userProfile?.email }}</p>
             </div>
             <div>
               <label class="label">
                 <span class="label-text text-gray-500">Phone</span>
               </label>
-              <p class="font-medium">(555) 123-4567</p>
+              <p class="font-medium">{{ profileUser.userProfile?.phone }}</p>
             </div>
             <div>
               <label class="label">
                 <span class="label-text text-gray-500">Location</span>
               </label>
-              <p class="font-medium">San Francisco, CA</p>
+              <p class="font-medium">{{ profileUser.userProfile?.address }}</p>
             </div>
           </div>
         </div>
@@ -164,21 +162,17 @@
           <div class="space-y-4">
             <div>
               <label class="label">
-                <span class="label-text text-gray-500">Username</span>
-              </label>
-              <p class="font-medium">sarah_admin</p>
-            </div>
-            <div>
-              <label class="label">
                 <span class="label-text text-gray-500">Role</span>
               </label>
-              <p class="font-medium">Super Administrator</p>
+              <p class="font-medium">{{ profileUser.userProfile?.role }}</p>
             </div>
             <div>
               <label class="label">
                 <span class="label-text text-gray-500">Joined</span>
               </label>
-              <p class="font-medium">January 15, 2021</p>
+              <p class="font-medium">
+                {{ formatDate(profileUser.userProfile?.created_at) }}
+              </p>
             </div>
             <div>
               <label class="label">
@@ -240,7 +234,9 @@
             </div>
           </div>
           <div class="card-actions justify-end mt-4">
-            <button class="btn btn-sm btn-primary">Change Password</button>
+            <button class="btn btn-sm btn-primary" @click="openModal">
+              Change Password
+            </button>
             <button class="btn btn-sm btn-outline btn-secondary">
               View Sessions
             </button>
@@ -355,14 +351,215 @@
       </div>
     </div>
   </div>
+  <!-- modal change password -->
+  <div>
+    <dialog ref="changePasswordModal" class="modal">
+      <div class="modal-box">
+        <div class="flex justify-between items-center">
+          <h3 class="text-xl font-bold">Change Password</h3>
+          <button
+            type="button"
+            class="btn btn-sm btn-circle btn-ghost"
+            @click="closeModal"
+          >
+            ✕
+          </button>
+        </div>
+        <form @submit.prevent="handlePasswordChange" class="mt-4 space-y-4">
+          <!-- General Error -->
+          <div
+            v-if="validationErrors.general"
+            class="alert alert-error text-sm p-2"
+          >
+            {{ validationErrors.general }}
+          </div>
+
+          <!-- Current Password -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">Current Password</span>
+            </label>
+            <input
+              v-model="passwordForm.currentPassword"
+              type="password"
+              placeholder="Enter current password"
+              class="input input-bordered w-full"
+              :class="{ 'input-error': validationErrors.currentPassword }"
+              @input="validationErrors.currentPassword = ''"
+            />
+            <p
+              v-if="validationErrors.currentPassword"
+              class="text-sm text-red-600"
+            >
+              {{ validationErrors.currentPassword }}
+            </p>
+          </div>
+
+          <!-- New Password -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text"
+                >New Password / Must be at least 8 characters</span
+              >
+            </label>
+            <input
+              v-model="passwordForm.newPassword"
+              type="password"
+              placeholder="Enter new password"
+              class="input input-bordered w-full"
+              :class="{ 'input-error': validationErrors.newPassword }"
+              @input="validationErrors.newPassword = ''"
+            />
+
+            <p v-if="validationErrors.newPassword" class="text-sm text-red-600">
+              {{ validationErrors.newPassword }}
+            </p>
+          </div>
+
+          <!-- Confirm Password -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">Confirm New Password</span>
+            </label>
+            <input
+              v-model="passwordForm.confirmPassword"
+              type="password"
+              placeholder="Confirm new password"
+              class="input input-bordered w-full"
+              :class="{ 'input-error': validationErrors.confirmPassword }"
+              @input="validationErrors.confirmPassword = ''"
+            />
+            <p
+              v-if="validationErrors.confirmPassword"
+              class="text-sm text-red-600"
+            >
+              {{ validationErrors.confirmPassword }}
+            </p>
+          </div>
+
+          <div class="modal-action">
+            <button
+              type="button"
+              class="btn"
+              @click="closeModal"
+              :disabled="isSubmitting"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              class="btn btn-primary"
+              :disabled="isSubmitting"
+            >
+              <span v-if="isSubmitting" class="loading loading-spinner"></span>
+              {{ isSubmitting ? "Changing..." : "Change Password" }}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Click outside to close -->
+      <form method="dialog" class="modal-backdrop">
+        <button @click="closeModal">close</button>
+      </form>
+    </dialog>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 import { useProfileStore } from "../../../stores/profileUser.store";
+import { useToast } from "vue-toastification";
+import api from "../../../config/axios";
+import type {
+  PasswordForm,
+  ValidationErrors,
+} from "../../../types/user_list.type";
+import { formatDate } from "../../../utility/dateUtils";
 
 const profileUser = useProfileStore();
 const isLoading = ref(true);
+const toast = useToast();
+const validationErrors = ref<ValidationErrors>({});
+const isSubmitting = ref(false);
+const changePasswordModal = ref<HTMLDialogElement | null>(null);
+
+// change user password
+const passwordForm = ref<PasswordForm>({
+  currentPassword: "",
+  newPassword: "",
+  confirmPassword: "",
+});
+const openModal = () => {
+  if (changePasswordModal.value) {
+    changePasswordModal.value.showModal();
+    passwordForm.value = {
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+    };
+    validationErrors.value = {};
+  }
+};
+const closeModal = () => {
+  if (changePasswordModal.value) {
+    changePasswordModal.value.close();
+  }
+};
+const validateForm = (): boolean => {
+  const errors: ValidationErrors = {};
+  if (!passwordForm.value.currentPassword) {
+    errors.currentPassword = "Current password is required";
+  }
+
+  if (!passwordForm.value.newPassword) {
+    errors.newPassword = "New password is required";
+  } else if (passwordForm.value.newPassword.length < 8) {
+    errors.newPassword = "Password must be at least 8 characters";
+  }
+
+  if (!passwordForm.value.confirmPassword) {
+    errors.confirmPassword = "Please confirm your new password";
+  } else if (
+    passwordForm.value.newPassword !== passwordForm.value.confirmPassword
+  ) {
+    errors.confirmPassword = "Passwords do not match";
+  }
+
+  validationErrors.value = errors;
+  return Object.keys(errors).length === 0;
+};
+
+const handlePasswordChange = async () => {
+  if (!validateForm()) return;
+  isSubmitting.value = true;
+  try {
+    const response = await api.patch("/users/change-password", {
+      currentPassword: passwordForm.value.currentPassword,
+      newPassword: passwordForm.value.newPassword,
+    });
+    if (response.data.success) {
+      toast.success("Password changed successfully");
+      closeModal();
+    }
+  } catch (error: any) {
+    if (error.response) {
+      if (error.response.data.message) {
+        validationErrors.value.general = error.response.data.message;
+      } else if (error.response.data.errors) {
+        validationErrors.value = {
+          ...validationErrors.value,
+          ...error.response.data.errors,
+        };
+      }
+    } else {
+      toast.error("Failed to change password. Please try again.");
+    }
+  } finally {
+    isSubmitting.value = false;
+  }
+};
+
 onMounted(async () => {
   if (!profileUser.userProfile) {
     await profileUser.fetchProfile();

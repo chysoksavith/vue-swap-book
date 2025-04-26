@@ -76,7 +76,12 @@
       <div class="dropdown dropdown-end">
         <div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar">
           <div class="w-10 rounded-full">
-            <img src="https://placehold.co/100" alt="Profile" />
+            <img
+              v-if="props.user && props.user.profile_image"
+              :src="props.user.profile_image"
+              alt="Profile"
+            />
+            <img v-else src="https://placehold.co/100" alt="Profile" />
           </div>
         </div>
         <ul
@@ -84,7 +89,7 @@
           class="mt-3 z-[1] p-2 shadow menu menu-sm dropdown-content bg-base-100 rounded-box w-52"
         >
           <li>
-            <RouterLink :to="{name: 'profile-admin'}" class="justify-between">
+            <RouterLink to="/admin/profile" class="justify-between">
               Profile
               <!-- <span class="badge">New</span> -->
             </RouterLink>
@@ -111,7 +116,12 @@ const authStore = useAuthStore();
 const route = useRoute();
 const router = useRouter();
 const isLoading = ref(false);
-
+const props = defineProps({
+  user: {
+    type: Object,
+    required: true,
+  },
+});
 const handleLogout = async () => {
   isLoading.value = true;
   try {

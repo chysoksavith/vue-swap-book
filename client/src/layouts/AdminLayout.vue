@@ -6,7 +6,7 @@
       <!-- Page content -->
       <div class="drawer-content flex flex-col">
         <!-- Header -->
-        <Header @toggle-drawer="toggleDrawer" />
+        <Header :user="user" @toggle-drawer="toggleDrawer" />
 
         <!-- Main content -->
         <main class="flex-1 p-4 md:p-6 mt-16 lg:mt-0">

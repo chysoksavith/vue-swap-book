@@ -58,7 +58,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: "profile",
         component: () => import("../views/admin/auth/Profile.vue"),
-        name: "profile-admin",
+        name: "Profile",
         meta: {
           title: "Dashboard | Profile",
         },

@@ -46,3 +46,14 @@ export interface UserForm {
   is_active: boolean;
   profile_image: File | null;
 }
+export interface PasswordForm {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+export interface ValidationErrors {
+  currentPassword?: string;
+  newPassword?: string;
+  confirmPassword?: string;
+  general?: string;
+}

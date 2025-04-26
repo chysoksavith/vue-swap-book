@@ -6,6 +6,7 @@ import {
   getProfile,
   getAllUsers,
   updateUserStatus,
+  changePasswordUser,
 } from "../controllers/userController";
 import upload from "../middlewares/uploadMiddleware";
 import { checkBlackListedToken } from "../middlewares/checkBlacklistedToken";
@@ -41,6 +42,11 @@ router.patch(
   authenticateUser as RequestHandler,
   checkRole(["admin"]) as RequestHandler,
   updateUserStatus as unknown as RequestHandler
+);
+router.patch(
+  "/change-password",
+  authenticateUser as RequestHandler,
+  changePasswordUser as unknown as RequestHandler
 );
 // router.get(
 //   "/validate-token",
