@@ -5,7 +5,7 @@
     <!-- Sidebar header -->
     <div class="flex items-center mb-4">
       <div class="flex items-center space-x-3">
-        <div class=" w-16 h-16 flex items-center justify-center">
+        <div class="w-16 h-16 flex items-center justify-center">
           <img
             src="../../assets/swapbooklogo.png"
             alt="SwapBook Logo"
@@ -31,7 +31,7 @@
       <NavItem to="/products" icon="shopping-bag" label="Products" />
 
       <li>
-        <details open>
+        <details :open="isActive('/books')">
           <summary>
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -44,23 +44,43 @@
                 stroke-linecap="round"
                 stroke-linejoin="round"
                 stroke-width="2"
-                d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+                d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
               />
             </svg>
-            <span>Financial</span>
+            <span>Book management</span>
           </summary>
           <ul>
-            <NavItem
-              to="/transactions"
-              icon="currency-dollar"
-              label="Transactions"
-            />
-            <NavItem to="/invoices" icon="document-text" label="Invoices" />
+            <NavItem to="/admin/categories" icon="tag" label="Categories" />
+            <NavItem to="/authors" icon="pencil" label="Authors" />
+            <NavItem to="/books" icon="book-open" label="Books" />
+          </ul>
+        </details>
+      </li>
+      <li>
+        <details :open="isActive('/expenses')">
+          <summary>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"
+              />
+            </svg>
+            <span>Expenses</span>
+          </summary>
+          <ul>
+            <NavItem to="/expenses" icon="currency-dollar" label="Expenses" />
             <NavItem to="/reports" icon="chart-bar" label="Reports" />
           </ul>
         </details>
       </li>
-
       <li class="menu-title">
         <span>Settings</span>
       </li>
@@ -80,7 +100,6 @@
               alt="User avatar"
               class="w-full h-full object-cover"
             />
-
             <img
               v-else
               src="https://placehold.co/100"
@@ -100,11 +119,18 @@
 
 <script setup>
 import NavItem from "../../components/ui/NavItem.vue";
-import { defineProps } from "vue";
+import { defineProps, computed } from "vue";
+import { useRoute } from "vue-router";
+
+const route = useRoute();
 const props = defineProps({
   user: {
     type: Object,
     required: true,
   },
 });
-</script>a
+
+const isActive = (path) => {
+  return route.path === path || route.path.startsWith(path + "/");
+};
+</script>

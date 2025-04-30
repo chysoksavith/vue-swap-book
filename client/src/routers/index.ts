@@ -63,6 +63,14 @@ const routes: RouteRecordRaw[] = [
           title: "Dashboard | Profile",
         },
       },
+      {
+        path: "categories",
+        component: () => import("../views/admin/categories/CategoriesView.vue"),
+        name: "Categories",
+        meta: {
+          title: "Dashboard | Categories",
+        },
+      },
     ],
   },
   // 404 route

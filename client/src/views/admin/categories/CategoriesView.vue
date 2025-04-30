@@ -13,7 +13,7 @@
         <div class="flex justify-between items-center mb-3">
           <h2 class="card-title">Categories Management</h2>
           <button class="btn btn-sm btn-primary" @click="openCreateModal">
-            Create Category
+            Create
           </button>
         </div>
         <!-- table -->
@@ -23,7 +23,7 @@
               <tr>
                 <th class="p-3 text-left">ID</th>
                 <th class="p-3 text-left">Name</th>
-                <th class="p-3 text-left">Status</th>
+                <th class="p-3 text-left">Active</th>
                 <th class="p-3 text-left">Created</th>
                 <th class="p-3 text-left">Updated</th>
                 <th class="p-3 text-left">Actions</th>
@@ -46,7 +46,6 @@
                       type="checkbox"
                       :checked="category.published === 1"
                       class="toggle toggle-success"
-                      @change="toggleStatus(category)"
                     />
                   </td>
                   <td class="p-3 text-gray-600">
@@ -97,6 +96,31 @@
                           />
                         </svg>
                       </button>
+                      <button
+                        class="p-2 text-green-600 hover:bg-green-50 rounded-full"
+                        title="View"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          class="h-5 w-5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                          />
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                          />
+                        </svg>
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -107,92 +131,110 @@
       </div>
     </div>
   </div>
-
-  <!-- Create/Edit Modal -->
-  <dialog ref="categoryModal" class="modal">
-    <div class="modal-box w-11/12 max-w-2xl">
-      <div class="flex justify-between items-center">
-        <h3 class="text-xl font-bold">{{ isEditing ? 'Edit' : 'Create' }} Category</h3>
-        <button
-          type="button"
-          class="btn btn-sm btn-circle btn-ghost"
-          @click="closeModal"
-        >
-          ✕
-        </button>
-      </div>
-      <!-- form -->
-      <form @submit.prevent="handleSubmit" class="space-y-4 mt-4">
-        <div class="form-control">
-          <label class="label"><span class="label-text">Name *</span></label>
-          <input
-            type="text"
-            v-model="categoryForm.name"
-            placeholder="Enter category name"
-            class="input input-bordered w-full"
-            :class="{ 'input-error': validationErrors.name }"
-          />
-          <label class="label" v-if="validationErrors.name">
-            <span class="label-text-alt text-error">{{ validationErrors.name[0] }}</span>
-          </label>
-        </div>
-        <div class="form-control">
-          <label class="label cursor-pointer justify-start gap-2">
-            <input
-              type="checkbox"
-              v-model="categoryForm.published"
-              :true-value="1"
-              :false-value="0"
-              class="toggle toggle-success"
-            />
-            <span class="label-text">Published</span>
-          </label>
-        </div>
-        <div class="modal-action">
+  <!-- create / edit modal -->
+  <div>
+    <dialog ref="categoryModal" class="modal">
+      <div class="modal-box w-11/12 max-w-2xl">
+        <div class="flex justify-between items-center">
+          <h3 class="text-xl font-bold">{{ isEditing ? "Edit" : "Create" }}</h3>
           <button
             type="button"
-            class="btn"
+            class="btn btn-sm btn-circle btn-ghost"
             @click="closeModal"
-            :disabled="isSubmitting"
           >
-            Cancel
-          </button>
-          <button type="submit" class="btn btn-primary" :disabled="isSubmitting">
-            <span v-if="isSubmitting" class="loading loading-spinner"></span>
-            {{ isSubmitting ? 'Processing...' : 'Submit' }}
+            ✕
           </button>
         </div>
+        <!-- form -->
+        <form @submit.prevent="handleSubmit" class="space-y-4 mt-4">
+          <div class="form-control">
+            <label class="label"><span class="label-text">Name *</span></label>
+            <input
+              type="text"
+              v-model="categoryForm.name"
+              placeholder="Enter name category"
+              class="input input-bordered w-full"
+              :class="{ 'input-error': validationErrors.name }"
+            />
+            <p v-if="validationErrors.name" class="text-sm text-red-600">
+              {{ validationErrors.name[0] }}
+            </p>
+          </div>
+          <div class="form-control">
+            <label class="label cursor-pointer justify-start gap-2">
+              <input
+                type="checkbox"
+                v-model="categoryForm.published"
+                :true-value="1"
+                :false-value="0"
+                class="toggle toggle-success"
+              />
+              <span class="label-text">Active & InActive</span>
+            </label>
+          </div>
+          <div class="modal-action">
+            <button
+              type="button"
+              class="btn"
+              @click="closeModal"
+              :disabled="isSubmitting"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              class="btn btn-primary"
+              :disabled="isSubmitting"
+            >
+              <span v-if="isSubmitting" class="loading loading-spinner"></span>
+              {{ isSubmitting ? "Processing..." : "Submit" }}
+            </button>
+          </div>
+        </form>
+      </div>
+      <!-- click outside to close -->
+      <form method="dialog" class="modal-backdrop">
+        <button @click="closeModal">close</button>
       </form>
-    </div>
-    <!-- click outside to close -->
-    <form method="dialog" class="modal-backdrop">
-      <button @click="closeModal">close</button>
-    </form>
-  </dialog>
-
+    </dialog>
+  </div>
   <!-- Delete Confirmation Modal -->
   <dialog ref="deleteModal" class="modal">
     <div class="modal-box">
       <h3 class="font-bold text-lg">Confirm Deletion</h3>
-      <p class="py-4">Are you sure you want to delete "{{ categoryToDelete?.name }}"?</p>
+      <p class="py-4">
+        Are you sure you want to delete "{{ categoryToDelete?.name }}"?
+      </p>
       <div class="modal-action">
         <button class="btn" @click="closeDeleteModal">Cancel</button>
-        <button class="btn btn-error" @click="handleDelete" :disabled="isDeleting">
+        <button
+          class="btn btn-error"
+          @click="handleDelete"
+          :disabled="isDeleting"
+        >
           <span v-if="isDeleting" class="loading loading-spinner"></span>
-          {{ isDeleting ? 'Deleting...' : 'Delete' }}
+          {{ isDeleting ? "Deleting..." : "Delete" }}
         </button>
       </div>
     </div>
+    <form method="dialog" class="modal-backdrop">
+      <button @click="closeDeleteModal">close</button>
+    </form>
   </dialog>
 </template>
-
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
-import type { CategoryForm, ValidationErrors, Categories } from "../../../types/categories.type";
+import type {
+  CategoryForm,
+  ValidationErrors,
+  Categories,
+} from "../../../types/categories.type";
 import api from "../../../config/axios";
 import EmptyData from "../../../components/EmptyData.vue";
 import { formatDate } from "../../../utility/dateUtils";
+import { useToast } from "vue-toastification";
 
+const toast = useToast();
 const categories = ref<Categories[]>([]);
 const isLoading = ref(true);
 const error = ref<string | null>(null);
@@ -208,58 +250,43 @@ const categoryForm = ref<CategoryForm>({
   name: "",
   published: 1,
 });
-
-// Modal handling
 const openCreateModal = () => {
   isEditing.value = false;
   categoryForm.value = { name: "", published: 1 };
   validationErrors.value = {};
   categoryModal.value?.showModal();
 };
-
 const openEditModal = (category: Categories) => {
   isEditing.value = true;
   categoryForm.value = {
     name: category.name,
     published: category.published,
-    id: category.id
+    id: category.id,
   };
   validationErrors.value = {};
   categoryModal.value?.showModal();
 };
-
 const closeModal = () => {
   categoryModal.value?.close();
 };
 
-const confirmDelete = (category: Categories) => {
-  categoryToDelete.value = category;
-  deleteModal.value?.showModal();
-};
-
-const closeDeleteModal = () => {
-  deleteModal.value?.close();
-};
-
-// Form validation
 const validateForm = (): boolean => {
   validationErrors.value = {};
   let valid = true;
 
   if (!categoryForm.value.name.trim()) {
-    validationErrors.value.name = ["The name field is required."];
+    validationErrors.value.name = "The name field is required.";
     valid = false;
   }
 
   return valid;
 };
-
-// CRUD Operations
+const closeDeleteModal = () => {
+  deleteModal.value?.close();
+};
 const handleSubmit = async () => {
   if (!validateForm()) return;
-
   isSubmitting.value = true;
-
   try {
     if (isEditing.value) {
       await api.put(`/categories/${categoryForm.value.id}`, categoryForm.value);
@@ -267,45 +294,39 @@ const handleSubmit = async () => {
       await api.post("/categories", categoryForm.value);
     }
     await fetchCategories();
+    toast.success(isEditing.value ? "Category updated" : "Category created");
     closeModal();
   } catch (err: any) {
     if (err.response?.status === 422) {
       validationErrors.value = err.response.data.errors;
+    } else if (err.response?.data?.message) {
+      toast.error(err.response.data.message);
     } else {
-      console.error("Error saving category:", err);
+      toast.error("An error occurred while saving the category");
     }
   } finally {
     isSubmitting.value = false;
   }
 };
-
+// delete
+const confirmDelete = (category: Categories) => {
+  categoryToDelete.value = category;
+  deleteModal.value?.showModal();
+};
 const handleDelete = async () => {
   if (!categoryToDelete.value) return;
-
   isDeleting.value = true;
-
   try {
-    await api.delete(`/categories/${categoryToDelete.value.id}`);
+    await api.delete(`/categories/${categoryToDelete.value?.id}`);
     await fetchCategories();
+    toast.success("Category deleted");
     closeDeleteModal();
-  } catch (err) {
+  } catch (error) {
     console.error("Error deleting category:", err);
   } finally {
     isDeleting.value = false;
   }
 };
-
-const toggleStatus = async (category: Categories) => {
-  try {
-    await api.put(`/categories/${category.id}/status`, {
-      published: category.published === 1 ? 0 : 1
-    });
-    await fetchCategories();
-  } catch (err) {
-    console.error("Error toggling status:", err);
-  }
-};
-
 const fetchCategories = async () => {
   isLoading.value = true;
   error.value = null;
@@ -313,9 +334,10 @@ const fetchCategories = async () => {
   try {
     const { data } = await api.get("/categories");
     categories.value = data.data || data.categories;
+    console.log("categories", categories.value);
   } catch (err: any) {
     error.value = err.response?.data?.message || "Failed to load categories";
-    console.error("Error fetching categories:", err);
+    console.error("Error fetching users:", err);
   } finally {
     isLoading.value = false;
   }
