@@ -2,24 +2,39 @@ import { Request, Response } from "express";
 import pool from "../config/db";
 import { Category } from "../models/Category";
 import { RowDataPacket } from "mysql2";
-
+import { buildCategoryTree } from "../helpers/buildCategoryTree";
+import { generateSlug } from "../utils/slug";
 interface CategoryRow extends Category, RowDataPacket {}
 
 // get all categories
 export const getCategories = async (req: Request, res: Response) => {
   try {
+    // get the format parameter (tree or flat)
+    const format = (req.query.format as string) || "flat";
+    // get the categories from the database
     const [categories] = await pool.query<CategoryRow[]>(
-      "SELECT id, name, published , created_at, updated_at FROM categories ORDER BY created_at DESC"
+      "SELECT id, name, published, created_at, updated_at, slug, parent_id FROM categories ORDER BY parent_id IS NOT NULL, name ASC"
     );
     if (!categories || categories.length === 0 || !Array.isArray(categories)) {
       return res.status(404).json({
         message: "No categories found",
       });
     }
+    // return tree stucture if requested
+    if (format === "tree") {
+      const categoryTree = buildCategoryTree(categories);
+      return res.status(200).json({
+        success: true,
+        categories: categoryTree,
+      });
+    }
+    // default to flat stucture
     res.status(200).json({
+      success: true,
       categories: categories,
     });
   } catch (error) {
+    console.log("tree ", error);
     res.status(500).json({
       message: "Something went wrong",
     });
@@ -31,20 +46,32 @@ export const getCategoryById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    const [categories] = await pool.query<CategoryRow[]>(
-      "SELECT id, name, published FROM categories WHERE id = ?",
+    const [category] = await pool.query<CategoryRow[]>(
+      "SELECT id, name, slug, published, parent_id, created_at, updated_at FROM categories WHERE id = ?",
       [id]
     );
-    if (!categories || categories.length === 0 || !Array.isArray(categories)) {
+    if (!category || category.length === 0) {
       return res.status(404).json({
-        message: "No categories found",
+        success: false,
+        message: "Category not found",
       });
     }
+    // get child categories if any
+    const [children] = await pool.query<CategoryRow[]>(
+      "SELECT id, name, slug, published, parent_id, created_at, updated_at FROM categories WHERE parent_id = ?",
+      [id]
+    );
+    const categoryWithChildren = {
+      ...category[0],
+      children: children && children.length > 0 ? children : [],
+    };
+
     res.status(200).json({
       success: true,
-      categories: categories,
+      categories: categoryWithChildren,
     });
   } catch (error) {
+    console.log("get categ id", error);
     res.status(500).json({
       message: "Something went wrong",
     });
@@ -53,36 +80,58 @@ export const getCategoryById = async (req: Request, res: Response) => {
 // create category
 export const createCategory = async (req: Request, res: Response) => {
   try {
-    const { name, published = true } = req.body;
+    const { name, published = true, parent_id = null } = req.body;
     // validation
     if (!name || typeof name !== "string" || name.trim().length < 2) {
-      {
-        return res.status(400).json({
-          success: false,
-          message: "Category name must be at least 2 characters long",
-        });
-      }
+      return res.status(400).json({
+        success: false,
+        message: "Category name must be at least 2 characters long",
+      });
     }
+    // generate slug
+    const slug = generateSlug(name);
+
     // check if category already exists
     const [existingCategory] = await pool.query<CategoryRow[]>(
-      "SELECT id FROM categories WHERE name = ?",
-      [name.trim()]
+      "SELECT id FROM categories WHERE name = ? AND (parent_id = ? OR (parent_id IS NULL AND ? IS NULL))",
+      [name.trim(), parent_id, parent_id]
     );
     if (existingCategory && existingCategory.length > 0) {
       return res.status(400).json({
         success: false,
-        message: "Category already exists",
+        message: "Category already exists at this level",
       });
     }
+    // if parent_id provided verify parent exists
+    if (parent_id !== null) {
+      const [parentExists] = await pool.query<CategoryRow[]>(
+        "SELECT id FROM categories WHERE id = ?",
+        [parent_id]
+      );
+      if (!parentExists || parentExists.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Parent category does not exist",
+        });
+      }
+    }
     // create category
-    const [newCategory] = await pool.query<CategoryRow[]>(
-      "INSERT INTO categories (name, published) VALUES (?,?)",
-      [name.trim(), published]
+    const [result] = await pool.query(
+      "INSERT INTO categories (name, slug, published, parent_id) VALUES (?, ?, ?, ?)",
+      [name.trim(), slug, published, parent_id]
     );
+
+    const insertId = (result as any).insertId;
+    // Get the newly created category
+    const [newCategory] = await pool.query<CategoryRow[]>(
+      "SELECT id, name, slug, published, parent_id, created_at, updated_at FROM categories WHERE id = ?",
+      [insertId]
+    );
+
     res.status(201).json({
       success: true,
       message: "Category created successfully",
-      category: newCategory,
+      category: newCategory[0],
     });
   } catch (error) {
     console.error("Error creating category:", error);
@@ -96,7 +145,7 @@ export const createCategory = async (req: Request, res: Response) => {
 export const updateCategory = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { name, published } = req.body;
+    const { name, published, parent_id } = req.body;
 
     // validation
     if (!name || typeof name !== "string" || name.trim().length < 2) {
@@ -105,37 +154,79 @@ export const updateCategory = async (req: Request, res: Response) => {
         message: "Category name must be at least 2 characters long",
       });
     }
+    // generate slug
+    const slug = generateSlug(name);
+
     // check if category exists
     const [existingCategory] = await pool.query<CategoryRow[]>(
-      "SELECT id FROM categories WHERE id = ?",
+      "SELECT id, parent_id FROM categories WHERE id = ?",
       [id]
     );
+
     if (!existingCategory || existingCategory.length === 0) {
       return res.status(404).json({
         success: false,
         message: "Category not found",
       });
     }
+    // Prevent setting a category as its own parent or child
+    if (parent_id !== null && parseInt(id) === parent_id) {
+      return res.status(400).json({
+        success: false,
+        message: "A category cannot be its own parent",
+      });
+    }
+    // Check if new parent_id would create a circular reference
+    if (parent_id !== null) {
+      // Check if this category is a parent of the selected parent
+      const [potentialCycle] = await pool.query<CategoryRow[]>(
+        `WITH RECURSIVE category_path (id, parent_id) AS (
+          SELECT id, parent_id FROM categories WHERE id = ?
+          UNION ALL
+          SELECT c.id, c.parent_id FROM categories c
+          JOIN category_path cp ON c.parent_id = cp.id
+        )
+        SELECT id FROM category_path WHERE id = ?`,
+        [parent_id, id]
+      );
+
+      if (potentialCycle && potentialCycle.length > 1) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "This would create a circular reference in the category hierarchy",
+        });
+      }
+    }
+
     // check if name already exists
     const [duplicateName] = await pool.query<CategoryRow[]>(
-      "SELECT id FROM categories WHERE  name = ? AND id != ?",
-      [name.trim(), id]
+      "SELECT id FROM categories WHERE name = ? AND id != ? AND (parent_id = ? OR (parent_id IS NULL AND ? IS NULL))",
+      [name.trim(), id, parent_id, parent_id]
     );
     if (duplicateName && duplicateName.length > 0) {
       return res.status(400).json({
         success: false,
-        message: "Category name already exists",
+        message: "Category name already exists at this level",
       });
     }
+
     // update category
-    await pool.query<CategoryRow[]>(
-      "UPDATE categories SET name = ? , published = ? WHERE id = ?",
-      [name.trim(), published, id]
+    await pool.query(
+      "UPDATE categories SET name = ?, slug = ?, published = ?, parent_id = ?, updated_at = NOW() WHERE id = ?",
+      [name.trim(), slug, published, parent_id, id]
     );
+
+    // Get the updated category
+    const [updatedCategory] = await pool.query<CategoryRow[]>(
+      "SELECT id, name, slug, published, parent_id, created_at, updated_at FROM categories WHERE id = ?",
+      [id]
+    );
+
     res.status(200).json({
       success: true,
       message: "Category updated successfully",
-      category: updateCategory,
+      category: updatedCategory[0],
     });
   } catch (error) {
     console.error("Error updating category:", error);
@@ -159,6 +250,34 @@ export const deleteCategory = async (req: Request, res: Response) => {
         message: "Category not found",
       });
     }
+    // check if category has children
+    const [children] = await pool.query<CategoryRow[]>(
+      "SELECT id FROM categories WHERE parent_id = ?",
+      [id]
+    );
+
+    if (children && children.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Cannot delete category with subcategories. Please delete subcategories first or reassign them.",
+      });
+    }
+
+    // Check if category is being used in books or other related tables
+    // This is an example - adjust based on your schema
+    const [usedInBook] = await pool.query<CategoryRow[]>(
+      "SELECT id FROM books WHERE category_id = ? LIMIT 1",
+      [id]
+    );
+    if (usedInBook && (usedInBook as any[]).length > 0) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Cannot delete category that is being used in books. Please reassign or delete the books first.",
+      });
+    }
+    // detelet category
     await pool.query<CategoryRow[]>("DELETE FROM categories WHERE id = ?", [
       id,
     ]);
@@ -171,6 +290,73 @@ export const deleteCategory = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message: "Failed to update category",
+    });
+  }
+};
+// update category status
+export const updateCategoryStatus = async (req: Request, res: Response) => {
+  try {
+    const cateId = req.params.id;
+    const { published } = req.body;
+
+    if (typeof published !== "boolean") {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid published status",
+      });
+    }
+    const [result] = await pool.query(
+      "UPDATE categories SET published = ?, updated_at = NOW() WHERE id = ?",
+      [published, cateId]
+    );
+    if ((result as any).affectedRows === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Category not found",
+      });
+    }
+    return res.status(200).json({
+      success: true,
+      message: "Category status updated successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Something went wrong",
+    });
+  }
+};
+export const getCategoryPath = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const [path] = await pool.query(
+      `WITH RECURSIVE category_path (id, name, parent_id, depth) AS (
+        SELECT id, name, parent_id, 0 as depth FROM categories WHERE id = ?
+        UNION ALL
+        SELECT c.id, c.name, c.parent_id, cp.depth + 1 FROM categories c
+        JOIN category_path cp ON c.id = cp.parent_id
+      )
+      SELECT * FROM category_path ORDER BY depth DESC`,
+      [id]
+    );
+
+    if (!path || (path as any[]).length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Category not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      path: path,
+    });
+  } catch (error) {
+    console.error("Error getting category path:", error);
+    res.status(500).json({
+      success: false,
+      message: "Something went wrong",
     });
   }
 };

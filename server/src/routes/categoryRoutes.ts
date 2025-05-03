@@ -4,7 +4,9 @@ import {
   deleteCategory,
   getCategories,
   getCategoryById,
+  getCategoryPath,
   updateCategory,
+  updateCategoryStatus,
 } from "../controllers/categoryController";
 import { categoryValidationRules } from "../middlewares/categoryValidation";
 import { authenticateUser } from "../middlewares/authMiddleware";
@@ -21,6 +23,11 @@ router.get(
   authenticateUser as RequestHandler,
   getCategoryById as RequestHandler
 );
+router.get(
+  "/:id/path",
+  authenticateUser as RequestHandler,
+  getCategoryPath as RequestHandler
+);
 router.post(
   "/",
   authenticateUser as RequestHandler,
@@ -36,5 +43,10 @@ router.delete(
   "/:id",
   authenticateUser as RequestHandler,
   deleteCategory as RequestHandler
+);
+router.patch(
+  "/:id/status",
+  authenticateUser as RequestHandler,
+  updateCategoryStatus as unknown as RequestHandler
 );
 export default router;

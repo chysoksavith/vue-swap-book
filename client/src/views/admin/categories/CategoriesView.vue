@@ -45,6 +45,7 @@
                     <input
                       type="checkbox"
                       :checked="category.published === 1"
+                      @change="handleStatusChange(category)"
                       class="toggle toggle-success"
                     />
                   </td>
@@ -322,9 +323,23 @@ const handleDelete = async () => {
     toast.success("Category deleted");
     closeDeleteModal();
   } catch (error) {
-    console.error("Error deleting category:", err);
+    console.error("Error deleting category:", error);
   } finally {
     isDeleting.value = false;
+  }
+};
+// handleStatusChange
+const handleStatusChange = async (category: Categories) => {
+  try {
+    const newStatus = category.published === 1 ? false : true;
+    await api.patch(`/categories/${category.id}/status`, {
+      published: newStatus,
+    });
+    category.published = newStatus ? 1 : 0;
+    toast.success("Status updated");
+  } catch (error: any) {
+    toast.error(error.response?.data?.message || "Failed to update status");
+    category.published = category.published === 1 ? 0 : 1;
   }
 };
 const fetchCategories = async () => {
