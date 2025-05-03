@@ -14,7 +14,10 @@ export const categoryValidationRules = [
     .optional()
     .isBoolean()
     .withMessage("Published must be a boolean value"),
-
+  body("parent_id")
+    .optional({ nullable: true })
+    .isInt()
+    .withMessage("Parent ID must be an integer"),
   (req: Request, res: Response, next: NextFunction) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
