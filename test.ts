@@ -1,110 +1,103 @@
-// In your script setup
-const categoryTree = computed(() => {
-  // Create a map for quick lookup
-  const categoryMap = new Map<number | null, Category[]>()
-  
-  // Initialize map with empty arrays
-  categories.value.forEach(cat => {
-    if (!categoryMap.has(cat.parent_id)) {
-      categoryMap.set(cat.parent_id, [])
-    }
-    categoryMap.get(cat.parent_id)?.push(cat)
-  })
+<script setup lang="ts">
+// ... (keep your existing imports)
 
-  // Recursive function to build tree
-  const buildTree = (parentId: number | null, level: number = 0): Category[] => {
-    const children = categoryMap.get(parentId) || []
-    return children.map(child => ({
-      ...child,
-      level,
-      children: buildTree(child.id, level + 1)
-    }))
-  }
+// Data
+const isLoading = ref(true);
+const error = ref<string | null>(null);
+const categories = ref<Category[]>([]);
+const viewMode = ref<"flat" | "tree">("flat");
+const currentPage = ref(1);
+const itemsPerPage = ref(10); // Changed from 1 to 10
+const totalItems = ref(0);
+const searchQuery = ref("");
 
-  return buildTree(null)
-})
+// Add this computed property to replace the missing 'pagination' ref
+const pagination = computed(() => ({
+  total: totalItems.value,
+  limit: itemsPerPage.value,
+  currentPage: currentPage.value
+}));
+
+// ... (keep your other refs and computed properties)
+
+// Modify your fetchCategories function
 const fetchCategories = async () => {
-  isLoading.value = true
-  error.value = null
+  isLoading.value = true;
+  error.value = null;
 
   try {
-    // Always fetch flat data - we'll build the tree ourselves
-    const { data } = await api.get('/categories', { params: { format: 'flat' } })
-    
-    // Store both the raw categories and the tree structure
-    categories.value = data.categories || data
-    
-    // Force re-render of tree view if needed
-    if (viewMode.value === 'tree') {
-      categoryTree.value = buildCategoryTree(categories.value)
-    }
+    const { data } = await api.get("/categories", {
+      params: { 
+        format: "flat",
+        page: currentPage.value,
+        limit: itemsPerPage.value,
+        search: searchQuery.value 
+      },
+    });
+
+    categories.value = data.data || data.categories || data;
+    totalItems.value = data.pagination?.totalItems || data.total || categories.value.length;
     
   } catch (err: any) {
-    error.value = err.response?.data?.message || "Failed to load categories"
-    toast.error("Failed to load categories")
+    error.value = err.response?.data?.message || "Failed to load categories";
+    toast.error("Failed to load categories");
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
-}
+};
 
-// Explicit tree building function
-const buildCategoryTree = (categories: Category[]): Category[] => {
-  const map = new Map<number | null, Category[]>()
-  const tree: Category[] = []
-  
-  // Create map
-  categories.forEach(cat => {
-    if (!map.has(cat.parent_id)) {
-      map.set(cat.parent_id, [])
-    }
-    map.get(cat.parent_id)?.push(cat)
-  })
-  
-  // Build tree recursively
-  const buildBranch = (parentId: number | null, level: number = 0): Category[] => {
-    return (map.get(parentId) || []).map(cat => ({
-      ...cat,
-      level,
-      children: buildBranch(cat.id, level + 1)
-    }))
-  }
-  
- 
- 
-  return buildBranch(null)
-}
+// Add this method to handle items per page change
+const handleItemsPerPageChange = () => {
+  currentPage.value = 1; // Reset to first page when changing items per page
+  fetchCategories();
+};
 
-const handleSubmit = async () => {
-  if (!validateForm()) return
-  
-  isSubmitting.value = true
-  try {
-    if (isEditing.value) {
-      // Show confirmation if this will affect subcategories
-      if (categoryForm.value.parent_id !== originalParentId.value && isCategoryHasChildren.value) {
-        const confirmed = confirm(
-          "This will move all subcategories with it. Continue?"
-        )
-        if (!confirmed) return
-      }
-      
-      await api.put(`/categories/${categoryForm.value.id}`, categoryForm.value)
-      toast.success("Category hierarchy updated")
-    } else {
-      await api.post('/categories', categoryForm.value)
-      toast.success("Category created")
-    }
+// ... (keep your other methods)
+</script>
+
+<template>
+  <!-- ... (keep your existing template until the pagination section) -->
+
+  <!-- Update the pagination section to this: -->
+  <div class="flex flex-col md:flex-row justify-between items-center mt-4 gap-4" 
+       v-if="totalItems > 0 && !isLoading">
+    <div class="flex items-center gap-4">
+      <div class="text-sm text-gray-600">
+        Showing {{ (currentPage - 1) * itemsPerPage + 1 }} to
+        {{ Math.min(currentPage * itemsPerPage, totalItems) }}
+        of {{ totalItems }} entries
+      </div>
+      <select 
+        v-model="itemsPerPage" 
+        @change="handleItemsPerPageChange"
+        class="select select-bordered select-sm w-20"
+      >
+        <option value="5">5</option>
+        <option value="10">10</option>
+        <option value="20">20</option>
+        <option value="50">50</option>
+      </select>
+    </div>
     
-    // Force refresh
-    await fetchCategories()
-    closeModal()
-  } catch (err: any) {
-    if (err.response?.status === 422) {
-      validationErrors.value = err.response.data.errors
-    } else {
-      toast.error(err.response?.data?.message || "Operation failed")
-    }
-  } finally {
-    isSubmitting.value = false
-  }
-}
+    <vue-awesome-paginate
+      v-model="currentPage"
+      :total-items="totalItems"
+      :items-per-page="itemsPerPage"
+      :max-pages-shown="5"
+      :on-click="handlePageChange"
+    >
+      <template #prev-button>
+        <span class="pagination-button"> &laquo; </span>
+      </template>
+      <template #next-button>
+        <span class="pagination-button"> &raquo; </span>
+      </template>
+    </vue-awesome-paginate>
+  </div>
+
+  <!-- ... (keep the rest of your template) -->
+</template>
+
+<style scoped>
+/* Keep your existing styles */
+</style>

@@ -112,6 +112,7 @@ router.beforeEach(async (to, _from, next) => {
     }
   }
 
+
   next();
 });
 

@@ -52,8 +52,16 @@ export const authenticateUser = (
         status: "error",
         message: "Invalid token",
       });
+    } else if (error instanceof jwt.JsonWebTokenError) {
+      return res.status(401).json({
+        status: "error",
+        message: "Invalid token",
+      });
     }
-    res.status(400).json({ message: "Invalid token" });
+    res.status(400).json({
+      status: "error",
+      message: "Authentication failed",
+    });
   }
 };
 

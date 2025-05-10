@@ -9,32 +9,65 @@ interface CategoryRow extends Category, RowDataPacket {}
 // get all categories
 export const getCategories = async (req: Request, res: Response) => {
   try {
-    // get the format parameter (tree or flat)
+    // Parse query parameters with defaults
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const search = (req.query.search as string) || "";
     const format = (req.query.format as string) || "flat";
-    // get the categories from the database
-    const [categories] = await pool.query<CategoryRow[]>(
-      "SELECT id, name, published, created_at, updated_at, slug, parent_id FROM categories ORDER BY parent_id IS NOT NULL, name ASC"
+
+    // Calculate offset for pagination
+    const offset = (page - 1) * limit;
+
+    // Base query
+    let query = `
+      SELECT id, name, published, created_at, updated_at, slug, parent_id 
+      FROM categories 
+      WHERE name LIKE ?
+    `;
+
+    // Parameters for the query
+    const queryParams: any[] = [`%${search}%`];
+
+    // Add ordering
+    query += ` ORDER BY parent_id IS NOT NULL, name ASC`;
+
+    // Get total count for pagination
+    const [totalCountResult] = await pool.query<RowDataPacket[]>(
+      `SELECT COUNT(*) as count FROM categories WHERE name LIKE ?`,
+      [`%${search}%`]
     );
-    if (!categories || categories.length === 0 || !Array.isArray(categories)) {
+    const totalCount = (totalCountResult[0] as RowDataPacket).count || 0;
+    const totalPages = Math.ceil(totalCount / limit);
+
+    // Add pagination to the main query
+    query += ` LIMIT ? OFFSET ?`;
+    // Push as numbers, not strings
+    queryParams.push(limit, offset);
+
+    // Execute the query
+    const [categories] = await pool.query<CategoryRow[]>(query, queryParams);
+
+    if (!categories || !Array.isArray(categories)) {
       return res.status(404).json({
         message: "No categories found",
       });
     }
-    // return tree stucture if requested
-    if (format === "tree") {
-      const categoryTree = buildCategoryTree(categories);
-      return res.status(200).json({
-        success: true,
-        categories: categoryTree,
-      });
-    }
-    // default to flat stucture
-    res.status(200).json({
+
+    // Prepare response data
+    const responseData: any = {
       success: true,
-      categories: categories,
-    });
+      data: format === "tree" ? buildCategoryTree(categories) : categories,
+      pagination: {
+        totalItems: totalCount,
+        totalPages,
+        currentPage: page,
+        itemsPerPage: limit,
+      },
+    };
+
+    res.status(200).json(responseData);
   } catch (error) {
-    console.log("tree ", error);
+    console.error("Error fetching categories:", error);
     res.status(500).json({
       message: "Something went wrong",
     });

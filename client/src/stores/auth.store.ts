@@ -149,6 +149,11 @@ export const useAuthStore = defineStore("auth", {
       this.error = null;
     },
 
+    async handleAuthError(message: string): Promise<void> {
+      this.error = message;
+      await this.logout();
+    },
+
     // Additional helper methods
     // async refreshProfile(): Promise<void> {
     //   if (this.isAuthenticated) {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive, ref } from "vue";
+import { onMounted, reactive, ref } from "vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import {
@@ -10,9 +10,10 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import useVuelidate from "@vuelidate/core";
 import { useAuthStore } from "../../../stores/auth.store";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { required, email, minLength } from "@vuelidate/validators";
 import Swal from "sweetalert2";
+import { useToast } from "vue-toastification";
 // Add icons to library
 library.add(faUser, faLock, faEye, faEyeSlash);
 const router = useRouter();
@@ -20,7 +21,8 @@ const authStore = useAuthStore();
 const showPassword = ref(false);
 const isLoading = ref(false);
 const error = ref("");
-
+const route = useRoute();
+const toast = useToast();
 const form = reactive({
   email: "",
   password: "",
@@ -71,6 +73,12 @@ const handleLoginAdmin = async () => {
     isLoading.value = false;
   }
 };
+onMounted(() => {
+  if (route.query.sessionExpired) {
+    toast.warning("Your session has expired. Please log in again.");
+    router.replace({ query: {} });
+  }
+});
 </script>
 <template>
   <div class="login-container">
