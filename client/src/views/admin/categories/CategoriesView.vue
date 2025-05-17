@@ -11,6 +11,7 @@ import { formatDate } from "../../../utility/dateUtils";
 import { useToast } from "vue-toastification";
 import CategoryTreeNode from "../../../components/CategoryTreeNode.vue";
 import { VueAwesomePaginate } from "vue-awesome-paginate";
+import { updateCategoryStatus } from "../../../services/category.service";
 
 const toast = useToast();
 // Data
@@ -27,7 +28,7 @@ const validationErrors = ref<ValidationErrors>({});
 const categoryToDelete = ref<Category | null>(null);
 const originalParentId = ref<number | null>(null);
 const currentPage = ref(1);
-const itemsPerPage = ref(1);
+const itemsPerPage = ref(10);
 const totalItems = ref(0);
 const searchQuery = ref("");
 const categoryForm = ref<CategoryForm>({
@@ -102,11 +103,31 @@ const fetchCategories = async () => {
       },
     });
 
-    // Store the categories data
-    categories.value = data.data || data.categories || data;
-    totalItems.value =
-      data.pagination?.totalItems || data.total || categories.value.length;
-    console.log("data", totalItems);
+    // Make sure we're properly extracting data and pagination info
+    if (data.data) {
+      // If API returns standard structure with data property
+      categories.value = data.data;
+      if (data.pagination) {
+        totalItems.value = data.pagination.totalItems || 0;
+      } else if (data.meta) {
+        totalItems.value = data.meta.total || 0;
+      }
+    } else if (data.categories) {
+      // If API returns with categories property
+      categories.value = data.categories;
+      totalItems.value = data.total || categories.value.length;
+    } else {
+      // Fallback if API returns direct array
+      categories.value = data;
+      totalItems.value = data.length;
+    }
+
+    console.log("Pagination data:", {
+      total: totalItems.value,
+      page: currentPage.value,
+      limit: itemsPerPage.value,
+      itemsCount: categories.value.length,
+    });
   } catch (err: any) {
     error.value = err.response?.data?.message || "Failed to load categories";
     console.error("Error fetching categories:", err);
@@ -273,17 +294,7 @@ const handleDelete = async () => {
 };
 // handleStatusChange
 const handleStatusChange = async (category: Category) => {
-  try {
-    const newStatus = category.published === 1 ? false : true;
-    await api.patch(`/categories/${category.id}/status`, {
-      published: newStatus,
-    });
-    category.published = newStatus ? 1 : 0;
-    toast.success("Status updated");
-  } catch (error: any) {
-    toast.error(error.response?.data?.message || "Failed to update status");
-    category.published = category.published === 1 ? 0 : 1;
-  }
+  await updateCategoryStatus(category);
 };
 
 onMounted(() => {
@@ -314,16 +325,6 @@ onMounted(() => {
               v-model="searchQuery"
               @input="handleSearch"
             />
-            <select
-              v-model="itemsPerPage"
-              @change="handleItemsPerPageChange"
-              class="select select-bordered select-sm w-20"
-            >
-              <option value="5">5</option>
-              <option value="10">10</option>
-              <option value="20">20</option>
-              <option value="50">50</option>
-            </select>
           </div>
           <div class="flex gap-2">
             <select v-model="viewMode" class="select select-bordered select-sm">
@@ -477,15 +478,25 @@ onMounted(() => {
               </tbody>
             </table>
           </div>
-          <div
-            class="flex flex-col md:flex-row justify-between items-center mt-4 gap-4"
-            v-if="totalItems > 0 && !isLoading"
-          >
-            <div class="flex items-center gap-4">
-              <div class="text-sm text-gray-600">
+          <div class="pagination-container" v-if="totalItems > 0">
+            <div class="pagination-info">
+              <div class="showing-entries">
                 Showing {{ (currentPage - 1) * itemsPerPage + 1 }} to
                 {{ Math.min(currentPage * itemsPerPage, totalItems) }}
                 of {{ totalItems }} entries
+              </div>
+              <div class="items-per-page">
+                <span>Show:</span>
+                <select
+                  v-model="itemsPerPage"
+                  @change="handleItemsPerPageChange"
+                  class="page-select"
+                >
+                  <option value="5">5</option>
+                  <option value="10">10</option>
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                </select>
               </div>
             </div>
 
@@ -494,15 +505,8 @@ onMounted(() => {
               :total-items="totalItems"
               :items-per-page="itemsPerPage"
               :max-pages-shown="5"
-              :on-click="handlePageChange"
-            >
-              <template #prev-button>
-                <span class="pagination-button"> &laquo; </span>
-              </template>
-              <template #next-button>
-                <span class="pagination-button"> &raquo; </span>
-              </template>
-            </vue-awesome-paginate>
+              @click="handlePageChange"
+            />
           </div>
         </div>
       </div>
@@ -633,70 +637,48 @@ onMounted(() => {
     </form>
   </dialog>
 </template>
-<style scoped>
+<style>
 .pagination-container {
+  margin-top: 20px;
   display: flex;
-  column-gap: 6px;
+  justify-content: space-between;
   align-items: center;
+  column-gap: 10px;
 }
-
-.paginate-buttons {
-  height: 35px;
-  width: 35px;
-  border-radius: 6px;
-  cursor: pointer;
-  background-color: #f3f4f6;
-  border: 1px solid #e5e7eb;
-  color: #4b5563;
+.pagination-info {
   display: flex;
-  justify-content: center;
   align-items: center;
-  font-size: 0.875rem;
-  transition: all 0.2s ease;
+  gap: 21px;
+}
+.paginate-buttons {
+  height: 40px;
+
+  width: 40px;
+
+  border-radius: 20px;
+
+  cursor: pointer;
+
+  background-color: rgb(242, 242, 242);
+
+  border: 1px solid rgb(217, 217, 217);
+
+  color: black;
 }
 
 .paginate-buttons:hover {
-  background-color: #e5e7eb;
-  color: #1f2937;
+  background-color: #d8d8d8;
 }
 
 .active-page {
-  background-color: #3b82f6;
-  border-color: #3b82f6;
+  background-color: #3498db;
+
+  border: 1px solid #3498db;
+
   color: white;
 }
 
 .active-page:hover {
-  background-color: #2563eb;
-  color: white;
-}
-
-.pagination-button {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 35px;
-  width: 35px;
-  border-radius: 6px;
-  cursor: pointer;
-  background-color: #f3f4f6;
-  border: 1px solid #e5e7eb;
-  color: #4b5563;
-  transition: all 0.2s ease;
-}
-
-.pagination-button:hover {
-  background-color: #e5e7eb;
-  color: #1f2937;
-}
-
-.break-label {
-  height: 35px;
-  width: 35px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  color: #9ca3af;
-  cursor: default;
+  background-color: #2988c8;
 }
 </style>

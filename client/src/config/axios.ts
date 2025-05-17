@@ -4,7 +4,7 @@ import { useToast } from "vue-toastification";
 import { useRouter } from "vue-router";
 
 const api = axios.create({
-  baseURL: "http://localhost:5000/api/v1",
+  baseURL: import.meta.env.VITE_API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
   },
@@ -43,9 +43,9 @@ api.interceptors.response.use(
     }
     // Handle 401 Unauthorized
     if (error.response?.status === 401 && authStore.isAuthenticated) {
-      if (isHandlingUnauthorized) return Promise.reject(error); // Avoid loops
+      if (isHandlingUnauthorized) return Promise.reject(error);
 
-      isHandlingUnauthorized = true; // Block further checks
+      isHandlingUnauthorized = true; 
       toast.error("Your session has expired. Please log in again.");
 
       await authStore.logout();

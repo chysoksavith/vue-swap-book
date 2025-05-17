@@ -7,8 +7,8 @@ export interface Category {
   created_at: string;
   updated_at: string;
   children?: Category[];
-  depth?: number; // For breadcrumb path
-  isExpanded?: boolean; // UI state
+  depth?: number; 
+  isExpanded?: boolean; 
 }
 
 export interface CategoryForm {

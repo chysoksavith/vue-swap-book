@@ -328,11 +328,14 @@
           class="flex flex-col md:flex-row justify-between items-center mt-4 gap-4"
           v-if="pagination.total > 0 && !isLoading"
         >
-          <div class="text-sm text-gray-600">
-            Showing {{ (currentPage - 1) * pagination.limit + 1 }} to
-            {{ Math.min(currentPage * pagination.limit, pagination.total) }} of
-            {{ pagination.total }} entries
+          <div class="pagination-info">
+            <div class="text-sm text-gray-600">
+              Showing {{ (currentPage - 1) * pagination.limit + 1 }} to
+              {{ Math.min(currentPage * pagination.limit, pagination.total) }}
+              of {{ pagination.total }} entries
+            </div>
           </div>
+
           <vue-awesome-paginate
             v-model="currentPage"
             :total-items="pagination.total"
@@ -511,70 +514,48 @@ onMounted(async () => {
   fetchUsers();
 });
 </script>
-<style scoped>
+<style >
 .pagination-container {
+  margin-top: 20px;
   display: flex;
-  column-gap: 6px;
+  justify-content: space-between;
   align-items: center;
+  column-gap: 10px;
 }
-
-.paginate-buttons {
-  height: 35px;
-  width: 35px;
-  border-radius: 6px;
-  cursor: pointer;
-  background-color: #f3f4f6;
-  border: 1px solid #e5e7eb;
-  color: #4b5563;
+.pagination-info {
   display: flex;
-  justify-content: center;
   align-items: center;
-  font-size: 0.875rem;
-  transition: all 0.2s ease;
+  gap: 21px;
+}
+.paginate-buttons {
+  height: 40px;
+
+  width: 40px;
+
+  border-radius: 20px;
+
+  cursor: pointer;
+
+  background-color: rgb(242, 242, 242);
+
+  border: 1px solid rgb(217, 217, 217);
+
+  color: black;
 }
 
 .paginate-buttons:hover {
-  background-color: #e5e7eb;
-  color: #1f2937;
+  background-color: #d8d8d8;
 }
 
 .active-page {
-  background-color: #3b82f6;
-  border-color: #3b82f6;
+  background-color: #3498db;
+
+  border: 1px solid #3498db;
+
   color: white;
 }
 
 .active-page:hover {
-  background-color: #2563eb;
-  color: white;
-}
-
-.pagination-button {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 35px;
-  width: 35px;
-  border-radius: 6px;
-  cursor: pointer;
-  background-color: #f3f4f6;
-  border: 1px solid #e5e7eb;
-  color: #4b5563;
-  transition: all 0.2s ease;
-}
-
-.pagination-button:hover {
-  background-color: #e5e7eb;
-  color: #1f2937;
-}
-
-.break-label {
-  height: 35px;
-  width: 35px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  color: #9ca3af;
-  cursor: default;
+  background-color: #2988c8;
 }
 </style>
