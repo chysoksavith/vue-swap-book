@@ -6,15 +6,20 @@ const toast = useToast();
 
 export const updateCategoryStatus = async (category: Category) => {
   try {
-    const newStatus = category.published === 1 ? false : false;
-    await api.patch(`/categories/${category.id}/status`, {
+    const currentStatus = category.published === 1;
+    const newStatus = !currentStatus;
+
+    // Send boolean to backend
+    const response = await api.patch(`/categories/${category.id}/status`, {
       published: newStatus,
     });
+
+    // Update local category (keep as number: 1 or 0)
     category.published = newStatus ? 1 : 0;
     toast.success("Category status updated successfully");
+    return true;
   } catch (error: any) {
     toast.error(error.response?.data?.message || "Failed to update status");
-    category.published = category.published === 1 ? 0 : 1;
     return false;
   }
 };

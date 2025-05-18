@@ -12,6 +12,8 @@ import { useToast } from "vue-toastification";
 import CategoryTreeNode from "../../../components/CategoryTreeNode.vue";
 import { VueAwesomePaginate } from "vue-awesome-paginate";
 import { updateCategoryStatus } from "../../../services/category.service";
+import { createSearchHandler } from "../../../utility/helpers/categoryAdminHelper/searchHelper";
+import { buildCategoryTree } from "../../../utility/adminUtil/categoryUtils";
 
 const toast = useToast();
 // Data
@@ -42,33 +44,7 @@ const isCategoryHasChildren = computed(() => {
   return hasChildren({ id: categoryForm.value.id } as Category);
 });
 // computed
-const categoryTree = computed(() => {
-  // Create a map for quick lookup
-  const categoryMap = new Map<number | null, Category[]>();
-
-  // Initialize map with empty arrays
-  categories.value.forEach((cat) => {
-    if (!categoryMap.has(cat.parent_id)) {
-      categoryMap.set(cat.parent_id, []);
-    }
-    categoryMap.get(cat.parent_id)?.push(cat);
-  });
-
-  // Recursive function to build tree
-  const buildTree = (
-    parentId: number | null,
-    level: number = 0
-  ): Category[] => {
-    const children = categoryMap.get(parentId) || [];
-    return children.map((child) => ({
-      ...child,
-      level,
-      children: buildTree(child.id, level + 1),
-    }));
-  };
-
-  return buildTree(null);
-});
+const categoryTree = computed(() => buildCategoryTree(categories.value));
 const availableParentCategories = computed(() => {
   if (isEditing.value && categoryForm.value.id) {
     // When editing, exclude the current category and its children from parent options
@@ -145,41 +121,12 @@ const handleItemsPerPageChange = () => {
   fetchCategories();
 };
 // search
-let searchTimeout: ReturnType<typeof setTimeout>;
-const handleSearch = () => {
-  clearTimeout(searchTimeout);
-  searchTimeout = setTimeout(() => {
-    currentPage.value = 1;
-    fetchCategories();
-  }, 500);
-};
+const handleSearch = createSearchHandler(
+  searchQuery,
+  currentPage,
+  fetchCategories
+);
 // Explicit tree building function
-const buildCategoryTree = (categories: Category[]): Category[] => {
-  const map = new Map<number | null, Category[]>();
-  const tree: Category[] = [];
-
-  // Create map
-  categories.forEach((cat) => {
-    if (!map.has(cat.parent_id)) {
-      map.set(cat.parent_id, []);
-    }
-    map.get(cat.parent_id)?.push(cat);
-  });
-
-  // Build tree recursively
-  const buildBranch = (
-    parentId: number | null,
-    level: number = 0
-  ): Category[] => {
-    return (map.get(parentId) || []).map((cat) => ({
-      ...cat,
-      level,
-      children: buildBranch(cat.id, level + 1),
-    }));
-  };
-
-  return buildBranch(null);
-};
 
 const getParentName = (parentId: number) => {
   const parent = categories.value.find((c) => c.id === parentId);
